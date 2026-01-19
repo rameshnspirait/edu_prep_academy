@@ -1,4 +1,3 @@
-import 'package:edu_prep_academy/bindings/dashbaord_binding.dart';
 import 'package:edu_prep_academy/bindings/initial_bindings.dart';
 import 'package:edu_prep_academy/bindings/mock_test_binding.dart';
 import 'package:edu_prep_academy/bindings/notes_binding.dart';
@@ -27,7 +26,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.dashboard,
       page: () => DashboardView(),
-      binding: DashboardBinding(),
+      binding: InitialBinding(),
       transition: Transition.fadeIn,
     ),
     GetPage(
@@ -54,11 +53,7 @@ class AppPages {
       binding: ResultsBinding(),
       transition: Transition.fadeIn,
     ),
-    // GetPage(
-    //   name: AppRoutes.videoClasses,
-    //   page: () => VideoClassesView(),
-    //   // binding: DashboardBinding(),
-    //   transition: Transition.fadeIn,
-    // ),
+
+    ///////Profiles Options Pages
   ];
 }

@@ -11,7 +11,7 @@ import 'package:shimmer/shimmer.dart';
 class ResultsView extends GetView<ResultsController> {
   ResultsView({super.key});
 
-  final ThemeController themeCtrl = Get.find<ThemeController>();
+  final themeCtrl = Get.find<ThemeController>();
 
   @override
   Widget build(BuildContext context) {
