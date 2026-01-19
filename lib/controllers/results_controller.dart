@@ -144,14 +144,13 @@ class ResultsController extends GetxController {
   // TOTAL STUDENTS COUNT FOR THIS TEST
   // =====================================================
   Future<int> _calculateTotalStudents(String testId) async {
-    try {
-      final snap = await _firestore
-          .collectionGroup('mock_attempts')
-          .where('testId', isEqualTo: testId)
-          .get();
-      return snap.docs.length;
-    } catch (_) {
-      return 1;
-    }
+    final snap = await FirebaseFirestore.instance
+        .collection('test_leaderboard')
+        .doc(testId)
+        .collection('results')
+        .get();
+
+    final totalUsers = snap.docs.length;
+    return totalUsers;
   }
 }

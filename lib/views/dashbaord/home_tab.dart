@@ -13,7 +13,6 @@ class HomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeCtrl = Get.find<ThemeController>();
     final isDark = themeCtrl.isDarkMode.value;
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(

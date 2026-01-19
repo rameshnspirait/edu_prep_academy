@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edu_prep_academy/controllers/dashboard_controller.dart';
 import 'package:edu_prep_academy/core/constants/app_colors.dart';
 import 'package:edu_prep_academy/routes/app_routes.dart';
@@ -6,9 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:edu_prep_academy/widgets/custom_snackbar.dart';
-
 import '../widgets/custom_alert_dialog.dart';
 
 class AuthController extends GetxController with SingleGetTickerProviderMixin {
@@ -158,7 +157,14 @@ class AuthController extends GetxController with SingleGetTickerProviderMixin {
         smsCode: otpController.text,
       );
 
-      await _auth.signInWithCredential(credential);
+      // ✅ Sign in user
+      final userCredential = await _auth.signInWithCredential(credential);
+
+      final user = userCredential.user;
+      if (user == null) return;
+
+      // ✅ Save user to Firestore
+      await _saveUserToFirestore(user);
 
       /// SUCCESS
       otpFailures.value = 0;
@@ -176,6 +182,22 @@ class AuthController extends GetxController with SingleGetTickerProviderMixin {
       onOtpError();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  ///Save Users data to firebase firestore
+  Future<void> _saveUserToFirestore(User user) async {
+    final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+    final docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      await docRef.set({
+        'uid': user.uid,
+        'phone': user.phoneNumber,
+        'role': 'student',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
     }
   }
 
