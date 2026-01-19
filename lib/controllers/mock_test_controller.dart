@@ -118,15 +118,37 @@ class MockTestsController extends GetxController {
   Future<void> _loadUserAttempts() async {
     final user = _auth.currentUser;
     if (user == null) return;
-
     final snap = await _firestore
         .collection('users')
         .doc(user.uid)
         .collection('mock_attempts')
         .get();
 
+    final now = DateTime.now();
     for (final doc in snap.docs) {
-      attemptCountMap[doc.id] = _parseInt(doc.data()['attemptCount']);
+      final data = doc.data();
+      int attempts = _parseInt(data['attemptCount']);
+      final Timestamp? updatedAtTs = data['updatedAt'];
+      bool shouldReset = false;
+      if (attempts >= 3 && updatedAtTs != null) {
+        final DateTime updatedAt = updatedAtTs.toDate();
+        final diffHours = now.difference(updatedAt).inHours;
+        if (diffHours >= 24) {
+          shouldReset = true;
+        }
+      }
+
+      /// 🔁 RESET LOGIC
+      if (shouldReset) {
+        await doc.reference.update({
+          'attemptCount': 0,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        attemptCountMap[doc.id] = 0;
+      } else {
+        attemptCountMap[doc.id] = attempts;
+      }
     }
   }
 

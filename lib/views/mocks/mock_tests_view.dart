@@ -355,11 +355,17 @@ class _TestCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'You have already used all attempts for this test.\n'
-              'Attempts Limits Reached',
+              'You have reached the maximum number of attempts for this test.\n\n'
+              '🔒 This test will be unlocked again after 24 hours.\n'
+              'Please come back later and try again.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.4,
+                color: Colors.grey.shade600,
+              ),
             ),
+
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
