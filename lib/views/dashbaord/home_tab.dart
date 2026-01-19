@@ -1,3 +1,4 @@
+import 'package:edu_prep_academy/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:edu_prep_academy/routes/app_routes.dart';
@@ -26,12 +27,12 @@ class HomeTab extends StatelessWidget {
           children: [
             /// ---------------- GREETING ----------------
             _GreetingSection(isDark: isDark),
-
-            // const SizedBox(height: 20),
+            const SizedBox(height: 20),
+            _BannerSlider(isDark: isDark),
 
             /// ---------------- PROGRESS CARD ----------------
             // _ProgressCard(isDark: isDark),
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
 
             /// ---------------- QUICK ACTIONS ----------------
             Text(
@@ -50,6 +51,7 @@ class HomeTab extends StatelessWidget {
                 crossAxisCount: 2,
                 crossAxisSpacing: 14,
                 mainAxisSpacing: 14,
+
                 childAspectRatio: 1.05,
               ),
               children: [
@@ -111,7 +113,7 @@ class _GreetingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
@@ -179,6 +181,182 @@ class _GreetingSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BannerData {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final List<Color> gradient;
+
+  _BannerData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.gradient,
+  });
+}
+
+class _BannerCard extends StatelessWidget {
+  final _BannerData data;
+  final bool isDark;
+
+  const _BannerCard({required this.data, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: data.gradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.4 : 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          /// TEXT
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  data.title,
+                  style: AppTextStyles.headingSmall(
+                    context,
+                  ).copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  data.subtitle,
+                  style: AppTextStyles.bodySmall(
+                    context,
+                  ).copyWith(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+
+          /// ICON
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.2),
+            ),
+            child: Icon(data.icon, color: Colors.white, size: 30),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BannerSlider extends StatefulWidget {
+  final bool isDark;
+  const _BannerSlider({required this.isDark});
+
+  @override
+  State<_BannerSlider> createState() => _BannerSliderState();
+}
+
+class _BannerSliderState extends State<_BannerSlider> {
+  final PageController _controller = PageController();
+  int _currentIndex = 0;
+
+  final List<_BannerData> banners = [
+    _BannerData(
+      title: 'SSC & Banking Mock Tests',
+      subtitle: 'Latest pattern • Detailed analysis',
+      icon: Icons.assignment_turned_in_rounded,
+      gradient: [Color(0xFF5F2C82), Color(0xFF49A09D)],
+    ),
+    _BannerData(
+      title: 'UPSC Concept Notes',
+      subtitle: 'Static + Current Affairs',
+      icon: Icons.menu_book_rounded,
+      gradient: [Color(0xFF134E5E), Color(0xFF71B280)],
+    ),
+    _BannerData(
+      title: 'Daily Practice Tests',
+      subtitle: 'Improve accuracy & speed',
+      icon: Icons.timer_rounded,
+      gradient: [Color(0xFF283048), Color(0xFF859398)],
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _autoScroll();
+  }
+
+  void _autoScroll() {
+    Future.delayed(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      _currentIndex = (_currentIndex + 1) % banners.length;
+      _controller.animateToPage(
+        _currentIndex,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+      _autoScroll();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 150,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: banners.length,
+            onPageChanged: (index) {
+              setState(() => _currentIndex = index);
+            },
+            itemBuilder: (_, index) {
+              return _BannerCard(data: banners[index], isDark: widget.isDark);
+            },
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        /// DOT INDICATOR
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            banners.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              height: 6,
+              width: _currentIndex == index ? 18 : 6,
+              decoration: BoxDecoration(
+                color: _currentIndex == index
+                    ? AppColors.primaryBlue
+                    : Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
