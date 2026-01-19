@@ -39,7 +39,6 @@ class AuthController extends GetxController with SingleGetTickerProviderMixin {
   @override
   void onInit() {
     super.onInit();
-
     shakeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
