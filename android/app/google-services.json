@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "600079573284",
+    "project_id": "eduprep-academy",
+    "storage_bucket": "eduprep-academy.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:600079573284:android:7ae26dec30839bfb7fd3b1",
+        "android_client_info": {
+          "package_name": "com.examsolving.eduprepacademy.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEsQ6agTvKiZAgpHnnxMj0uaVC6ZaNzGg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
