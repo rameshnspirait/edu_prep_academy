@@ -1,8 +1,8 @@
-import 'package:edu_prep_academy/bindings/initial_bindings.dart';
-import 'package:edu_prep_academy/core/theme/app_theme.dart';
-import 'package:edu_prep_academy/core/wrapper/auth_wrapper.dart';
+import 'package:edu_prep_academy/User/bindings/initial_bindings.dart';
+import 'package:edu_prep_academy/User/core/theme/app_theme.dart';
+import 'package:edu_prep_academy/User/core/wrapper/auth_wrapper.dart';
+import 'package:edu_prep_academy/User/routes/app_pages.dart';
 import 'package:edu_prep_academy/firebase_options.dart';
-import 'package:edu_prep_academy/routes/app_pages.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
