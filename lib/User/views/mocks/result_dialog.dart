@@ -182,7 +182,7 @@ class ResultDialog extends StatelessWidget {
                             ? () {}
                             : controller.resetTestAndCloseDialog(context),
                         child: Text(
-                          disabled ? 'Retry Limit Reached' : 'Retry',
+                          disabled ? 'Locked' : 'Retry',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
