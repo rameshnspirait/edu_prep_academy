@@ -30,7 +30,7 @@ class DefaultFirebaseOptions {
   /// 🔹 iOS
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyD1o6wIYEZngNVJMi1IHQuUmyGcx_Ta3To',
-    appId: '1:600079573284:ios:302714a2799653e27fd3b1',
+    appId: '1:600079573284:ios:70329a2083ca86eb7fd3b1',
     messagingSenderId: '600079573284',
     projectId: 'eduprep-academy',
     storageBucket: 'eduprep-academy.firebasestorage.app',

@@ -7,9 +7,7 @@ class AppTheme {
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-
     scaffoldBackgroundColor: AppColors.lightBackground,
-
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primaryBlue,
       brightness: Brightness.light,
@@ -56,9 +54,7 @@ class AppTheme {
   static final ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-
     scaffoldBackgroundColor: AppColors.darkBackground,
-
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primaryBlue,
       brightness: Brightness.dark,

@@ -53,6 +53,10 @@ class AuthController extends GetxController with SingleGetTickerProviderMixin {
 
   /// ---------------- SEND OTP ----------------
   Future<void> sendOtp() async {
+    await FirebaseAuth.instance.setSettings(
+      appVerificationDisabledForTesting: true,
+    );
+
     final phone = phoneController.text.trim();
 
     /// ❌ EMPTY
@@ -80,6 +84,7 @@ class AuthController extends GetxController with SingleGetTickerProviderMixin {
     try {
       await _auth.verifyPhoneNumber(
         phoneNumber: '+91$phone',
+        timeout: const Duration(seconds: 30),
 
         /// AUTO VERIFY
         verificationCompleted: (credential) async {

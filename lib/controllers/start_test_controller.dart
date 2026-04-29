@@ -226,7 +226,7 @@ class StartTestController extends GetxController {
         'status': status,
       });
 
-      // 🔥 Update centralized leaderboard
+      //  Update centralized leaderboard
       final leaderboardRef = _firestore
           .collection('test_leaderboard')
           .doc(testId)
