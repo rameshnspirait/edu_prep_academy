@@ -10,52 +10,83 @@ class AdminMockTestPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.put(AdminMockTestController());
+    final width = MediaQuery.of(context).size.width;
+
+    /// 🔥 RESPONSIVE GRID
+    int crossAxisCount = 1;
+    if (width > 1200) {
+      crossAxisCount = 4;
+    } else if (width > 900) {
+      crossAxisCount = 3;
+    } else if (width > 600) {
+      crossAxisCount = 2;
+    }
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FB),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(width < 600 ? 12 : 20),
         child: Obx(() {
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ================= CATEGORY DROPDOWN =================
-              Row(
+              /// ================= HEADER =================
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                runSpacing: 10,
                 children: [
-                  DropdownButton<String>(
-                    value: ctrl.selectedCategory.value.isEmpty
-                        ? null
-                        : ctrl.selectedCategory.value,
+                  const Text(
+                    "Mock Test Management",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
 
-                    hint: const Text("Select Category"),
-
-                    items: ctrl.categories
-                        .map<DropdownMenuItem<String>>(
-                          (c) => DropdownMenuItem(value: c, child: Text(c)),
-                        )
-                        .toList(),
-
-                    onChanged: (v) {
-                      ctrl.selectedCategory.value = v ?? '';
-                    },
+                  Wrap(
+                    spacing: 10,
+                    children: [
+                      _primaryButton(
+                        title: "+ Add Test",
+                        onTap: ctrl.selectedCategory.value.isEmpty
+                            ? null
+                            : () => _showAddTestDialog(ctrl, context),
+                      ),
+                    ],
                   ),
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
 
-              // ================= ADD TEST =================
-              ElevatedButton(
-                onPressed: ctrl.selectedCategory.value.isEmpty
-                    ? null
-                    : () => _showAddTestDialog(ctrl),
-                child: const Text("+ Add Mock Test"),
+              /// ================= CATEGORY =================
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: ctrl.selectedCategory.value.isEmpty
+                        ? null
+                        : ctrl.selectedCategory.value,
+                    hint: const Text("Select Category"),
+                    isExpanded: true,
+                    items: ctrl.categories
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (v) {
+                      ctrl.selectedCategory.value = v ?? '';
+                    },
+                  ),
+                ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
 
-              // ================= TEST LIST =================
+              /// ================= LIST =================
               Expanded(
                 child: ctrl.selectedCategory.value.isEmpty
-                    ? const Center(child: Text("Please select category"))
+                    ? _empty("Please select category")
                     : StreamBuilder(
                         stream: FirebaseFirestore.instance
                             .collection('mock_tests')
@@ -63,7 +94,6 @@ class AdminMockTestPage extends StatelessWidget {
                             .collection('tests')
                             .orderBy('createdAt', descending: true)
                             .snapshots(),
-
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) {
                             return const Center(
@@ -74,49 +104,26 @@ class AdminMockTestPage extends StatelessWidget {
                           final docs = snapshot.data!.docs;
 
                           if (docs.isEmpty) {
-                            return const Center(child: Text("No Tests Found"));
+                            return _empty("No tests found");
                           }
 
-                          return ListView.builder(
+                          return GridView.builder(
                             itemCount: docs.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: width < 600 ? 10 : 16,
+                                  mainAxisSpacing: width < 600 ? 10 : 16,
+                                  childAspectRatio: width < 600 ? 1.1 : 1.2,
+                                ),
                             itemBuilder: (_, i) {
                               final data = docs[i].data();
-
-                              return Card(
-                                child: ListTile(
-                                  title: Text(data['title'] ?? ''),
-
-                                  subtitle: Text(
-                                    "${data['questionsCount']} Questions | ${data['duration']} min",
-                                  ),
-
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // 🧠 OPEN QUESTIONS
-                                      IconButton(
-                                        icon: const Icon(Icons.quiz),
-                                        onPressed: () {
-                                          Get.to(
-                                            () => QuestionsAdminPage(
-                                              categoryId:
-                                                  ctrl.selectedCategory.value,
-                                              testId: docs[i].id,
-                                            ),
-                                          );
-                                        },
-                                      ),
-
-                                      // 🗑 DELETE
-                                      IconButton(
-                                        icon: const Icon(Icons.delete),
-                                        onPressed: () {
-                                          ctrl.deleteTest(docs[i].id);
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              return _testCard(
+                                ctrl,
+                                docs[i].id,
+                                data,
+                                context,
+                                width,
                               );
                             },
                           );
@@ -130,8 +137,101 @@ class AdminMockTestPage extends StatelessWidget {
     );
   }
 
-  // ================= ADD TEST DIALOG =================
-  void _showAddTestDialog(AdminMockTestController ctrl) {
+  // ================= TEST CARD =================
+  Widget _testCard(
+    AdminMockTestController ctrl,
+    String id,
+    Map<String, dynamic> data,
+    BuildContext context,
+    double width,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(blurRadius: 6, color: Colors.black.withOpacity(0.05)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// IMAGE
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: Image.network(
+              data['thumbnail'] ?? '',
+              height: width < 600 ? 90 : 120,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  const SizedBox(height: 90, child: Icon(Icons.image)),
+            ),
+          ),
+
+          /// TEXT
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data['title'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "${data['questionsCount']} Questions • ${data['duration']} min",
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          /// ACTIONS
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.quiz),
+                onPressed: () {
+                  Get.to(
+                    () => QuestionsAdminPage(
+                      categoryId: ctrl.selectedCategory.value,
+                      testId: id,
+                    ),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => ctrl.deleteTest(id),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= BUTTON =================
+  Widget _primaryButton({required String title, VoidCallback? onTap}) {
+    return ElevatedButton(onPressed: onTap, child: Text(title));
+  }
+
+  // ================= EMPTY =================
+  Widget _empty(String text) {
+    return Center(
+      child: Text(text, style: const TextStyle(color: Colors.grey)),
+    );
+  }
+
+  // ================= ADD TEST =================
+  void _showAddTestDialog(AdminMockTestController ctrl, BuildContext context) {
     final title = TextEditingController();
     final duration = TextEditingController();
     final questions = TextEditingController();
@@ -139,58 +239,101 @@ class AdminMockTestPage extends StatelessWidget {
     final isFree = true.obs;
 
     Get.dialog(
-      AlertDialog(
-        title: const Text("Create Mock Test"),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: title,
-                decoration: const InputDecoration(labelText: "Title"),
-              ),
-              TextField(
-                controller: duration,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Duration"),
-              ),
-              TextField(
-                controller: questions,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Questions"),
-              ),
-              TextField(
-                controller: thumbnail,
-                decoration: const InputDecoration(labelText: "Thumbnail URL"),
-              ),
-
-              const SizedBox(height: 10),
-
-              Obx(
-                () => SwitchListTile(
-                  title: const Text("Free Test"),
-                  value: isFree.value,
-                  onChanged: (v) => isFree.value = v,
+      Dialog(
+        child: SingleChildScrollView(
+          child: Container(
+            width: MediaQuery.of(context).size.width < 600
+                ? double.infinity
+                : 420,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                const Text(
+                  "Create Mock Test",
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 10),
+
+                TextField(
+                  controller: title,
+                  decoration: const InputDecoration(
+                    hintText: "Enter test title",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                TextField(
+                  controller: duration,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    hintText: "Duration (minutes)",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                TextField(
+                  controller: questions,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    hintText: "Number of questions",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                TextField(
+                  controller: thumbnail,
+                  decoration: const InputDecoration(
+                    hintText: "Thumbnail URL",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+
+                Obx(
+                  () => SwitchListTile(
+                    title: const Text("Free Test"),
+                    value: isFree.value,
+                    onChanged: (v) => isFree.value = v,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final dur = int.tryParse(duration.text) ?? 0;
+                      final ques = int.tryParse(questions.text) ?? 0;
+
+                      if (title.text.isEmpty || dur == 0 || ques == 0) {
+                        Get.snackbar("Error", "Fill all fields correctly");
+                        return;
+                      }
+
+                      ctrl.addMockTest(
+                        title: title.text.trim(),
+                        duration: dur,
+                        questionsCount: ques,
+                        thumbnail: thumbnail.text.trim(),
+                        isFree: isFree.value,
+                      );
+
+                      Get.back();
+                    },
+                    child: const Text("Save Test"),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              ctrl.addMockTest(
-                title: title.text.trim(),
-                duration: int.parse(duration.text),
-                questionsCount: int.parse(questions.text),
-                thumbnail: thumbnail.text.trim(),
-                isFree: isFree.value,
-              );
-
-              Get.back();
-            },
-            child: const Text("Save"),
-          ),
-        ],
       ),
     );
   }

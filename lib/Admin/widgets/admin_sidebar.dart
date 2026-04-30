@@ -11,55 +11,94 @@ class AdminSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Obx(() {
-        final isOpen = layoutCtrl.isSidebarOpen.value;
+    return Obx(() {
+      final isOpen = layoutCtrl.isSidebarOpen.value;
 
-        return Column(
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
           children: [
-            /// HEADER
-            SizedBox(
-              height: 60,
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: layoutCtrl.toggleSidebar,
-                    icon: const Icon(Icons.menu, color: Colors.black),
+            /// 🔝 HEADER
+            Row(
+              children: [
+                IconButton(
+                  onPressed: layoutCtrl.toggleSidebar,
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                ),
+                if (isOpen)
+                  const Text(
+                    "Admin",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  if (isOpen)
-                    const Text("Admin", style: TextStyle(color: Colors.black)),
-                ],
-              ),
+              ],
             ),
 
-            const Divider(color: Colors.white24),
+            const SizedBox(height: 20),
 
-            /// MENU
+            /// MENU ITEMS
             _menuItem(Icons.dashboard, "Dashboard", 0, isOpen),
             _menuItem(Icons.menu_book, "Notes", 1, isOpen),
             _menuItem(Icons.quiz, "Mock Tests", 2, isOpen),
+
+            const Spacer(),
+
+            /// LOGOUT (optional)
+            if (isOpen)
+              ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text(
+                  "Logout",
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () {},
+              ),
           ],
-        );
-      }),
-    );
+        ),
+      );
+    });
   }
 
   Widget _menuItem(IconData icon, String title, int index, bool isOpen) {
     return Obx(() {
       final isActive = navCtrl.selectedIndex.value == index;
 
-      return ListTile(
-        leading: Icon(icon, color: isActive ? Colors.blue : Colors.black),
-        title: isOpen
-            ? Text(
-                title,
-                style: TextStyle(color: isActive ? Colors.blue : Colors.black),
-              )
-            : null,
-        tileColor: isActive ? Colors.white10 : Colors.transparent,
-        onTap: () {
-          navCtrl.changePage(index);
-        },
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => navCtrl.changePage(index),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              // color: isActive
+              //     ? Colors.blue.withOpacity(0.2)
+              //     : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: isActive ? Colors.blue : Colors.white70),
+                if (isOpen) ...[
+                  const SizedBox(width: 12),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isActive ? Colors.blue : Colors.white,
+                      fontWeight: isActive
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
       );
     });
   }

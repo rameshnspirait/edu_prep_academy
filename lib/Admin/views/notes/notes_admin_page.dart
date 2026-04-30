@@ -9,65 +9,92 @@ class NotesAdminPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = Get.put(AdminNotesController());
 
+    final width = MediaQuery.of(context).size.width;
+
+    /// 🔥 RESPONSIVE GRID COUNT
+    int crossAxisCount = 1;
+    if (width > 1200) {
+      crossAxisCount = 4;
+    } else if (width > 900) {
+      crossAxisCount = 3;
+    } else if (width > 600) {
+      crossAxisCount = 2;
+    }
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FB),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(width < 600 ? 12 : 20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// ================= CATEGORY ROW =================
-            Row(
+            /// ================= HEADER =================
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
               children: [
-                /// DROPDOWN
-                Expanded(
-                  child: Obx(
-                    () => DropdownButtonFormField<String>(
-                      hint: const Text("Select Category"),
-                      value: ctrl.selectedCategory.value.isEmpty
-                          ? null
-                          : ctrl.selectedCategory.value,
-                      items: ctrl.categories
-                          .map(
-                            (c) => DropdownMenuItem(value: c, child: Text(c)),
-                          )
-                          .toList(),
-                      onChanged: (val) {
-                        ctrl.selectedCategory.value = val!;
-                        ctrl.loadNotes();
-                      },
-                    ),
-                  ),
+                const Text(
+                  "Notes Management",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
 
-                const SizedBox(width: 10),
-
-                /// ADD CATEGORY
-                ElevatedButton(
-                  onPressed: () => _addCategoryDialog(ctrl),
-                  child: const Text("+ Category"),
+                Wrap(
+                  spacing: 10,
+                  children: [
+                    _primaryButton(
+                      title: "+ Category",
+                      onTap: () => _addCategoryDialog(ctrl, context),
+                    ),
+                    _primaryButton(
+                      title: "+ Add Note",
+                      onTap: () {
+                        if (ctrl.selectedCategory.value.isEmpty) {
+                          Get.snackbar("Error", "Select category first");
+                          return;
+                        }
+                        _addNoteDialog(ctrl, context);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
 
-            /// ================= ADD NOTE =================
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (ctrl.selectedCategory.value.isEmpty) {
-                    Get.snackbar("Error", "Select category first");
-                    return;
-                  }
-                  _addNoteDialog(ctrl);
-                },
-                child: const Text("+ Add Note"),
+            /// ================= DROPDOWN =================
+            Obx(
+              () => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: ctrl.selectedCategory.value.isEmpty
+                        ? null
+                        : ctrl.selectedCategory.value,
+                    hint: const Text("Select Category"),
+                    isExpanded: true,
+                    items: ctrl.categories
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (val) {
+                      ctrl.selectedCategory.value = val!;
+                      ctrl.loadNotes();
+                    },
+                  ),
+                ),
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
 
-            /// ================= NOTES LIST =================
+            /// ================= NOTES =================
             Expanded(
               child: Obx(() {
                 if (ctrl.isLoading.value) {
@@ -75,48 +102,24 @@ class NotesAdminPage extends StatelessWidget {
                 }
 
                 if (ctrl.selectedCategory.value.isEmpty) {
-                  return const Center(child: Text("Select a category"));
+                  return _emptyState("Select a category");
                 }
 
                 if (ctrl.notes.isEmpty) {
-                  return const Center(child: Text("No notes available"));
+                  return _emptyState("No notes available");
                 }
 
-                return ListView.builder(
+                return GridView.builder(
                   itemCount: ctrl.notes.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: width < 600 ? 10 : 16,
+                    mainAxisSpacing: width < 600 ? 10 : 16,
+                    childAspectRatio: width < 600 ? 1.1 : 1.2,
+                  ),
                   itemBuilder: (_, index) {
                     final note = ctrl.notes[index];
-
-                    return Card(
-                      child: ListTile(
-                        leading: Image.network(
-                          note.thumbnail,
-                          width: 50,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.image),
-                        ),
-                        title: Text(note.title),
-                        subtitle: Text(
-                          note.content,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-
-                        /// ACTIONS
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => _editNoteDialog(ctrl, note),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () => ctrl.deleteNote(note.id),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
+                    return _noteCard(ctrl, note, width);
                   },
                 );
               }),
@@ -127,110 +130,334 @@ class NotesAdminPage extends StatelessWidget {
     );
   }
 
-  /// ================= ADD CATEGORY =================
-  void _addCategoryDialog(AdminNotesController ctrl) {
-    final controller = TextEditingController();
+  // ================= NOTE CARD =================
+  Widget _noteCard(AdminNotesController ctrl, dynamic note, double width) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(blurRadius: 6, color: Colors.black.withOpacity(0.05)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// IMAGE
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: Image.network(
+              note.thumbnail,
+              height: width < 600 ? 90 : 120,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  const SizedBox(height: 90, child: Icon(Icons.image)),
+            ),
+          ),
 
-    Get.dialog(
-      AlertDialog(
-        title: const Text("Create Category"),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: "Category Name"),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              ctrl.createCategory(controller.text);
-              Get.back();
-            },
-            child: const Text("Create"),
+          /// TEXT
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  note.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  note.content,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          /// ACTIONS
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18),
+                  onPressed: () => _editNoteDialog(ctrl, note),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                  onPressed: () => ctrl.deleteNote(note.id),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// ================= ADD NOTE =================
-  void _addNoteDialog(AdminNotesController ctrl) {
+  // ================= BUTTON =================
+  Widget _primaryButton({required String title, required VoidCallback onTap}) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      onPressed: onTap,
+      child: Text(title),
+    );
+  }
+
+  // ================= EMPTY =================
+  Widget _emptyState(String text) {
+    return Center(
+      child: Text(text, style: const TextStyle(color: Colors.grey)),
+    );
+  }
+
+  // ================= DIALOGS =================
+  void _addCategoryDialog(AdminNotesController ctrl, BuildContext context) {
+    final controller = TextEditingController();
+
+    Get.dialog(
+      Dialog(
+        child: Container(
+          width: MediaQuery.of(context).size.width < 600
+              ? double.infinity
+              : 400,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Create New Category",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 10),
+
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  hintText: "Enter category name (e.g. Reasoning, Math)",
+                  helperText: "This will group your notes",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (controller.text.trim().isEmpty) {
+                      Get.snackbar("Error", "Category name required");
+                      return;
+                    }
+
+                    ctrl.createCategory(controller.text.trim());
+                    Get.back();
+                  },
+                  child: const Text("Create Category"),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _addNoteDialog(AdminNotesController ctrl, BuildContext context) {
     final title = TextEditingController();
     final content = TextEditingController();
     final pdf = TextEditingController();
     final thumb = TextEditingController();
 
     Get.dialog(
-      AlertDialog(
-        title: const Text("Add Note"),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: title,
-                decoration: const InputDecoration(labelText: "Title"),
-              ),
-              TextField(
-                controller: content,
-                decoration: const InputDecoration(labelText: "Content"),
-              ),
-              TextField(
-                controller: pdf,
-                decoration: const InputDecoration(labelText: "PDF URL"),
-              ),
-              TextField(
-                controller: thumb,
-                decoration: const InputDecoration(labelText: "Thumbnail URL"),
-              ),
-            ],
+      Dialog(
+        child: SingleChildScrollView(
+          child: Container(
+            width: MediaQuery.of(context).size.width < 600
+                ? double.infinity
+                : 420,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Add New Note",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 12),
+
+                TextField(
+                  controller: title,
+                  decoration: const InputDecoration(
+                    hintText: "Enter note title (e.g. SSC GD Math Notes)",
+                    helperText: "Visible to students",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                TextField(
+                  controller: content,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    hintText: "Short description about this note",
+                    helperText: "Explain what students will learn",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                TextField(
+                  controller: pdf,
+                  decoration: const InputDecoration(
+                    hintText: "Paste PDF URL (Google Drive / Firebase)",
+                    helperText: "Must be a valid downloadable link",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                TextField(
+                  controller: thumb,
+                  decoration: const InputDecoration(
+                    hintText: "Thumbnail image URL",
+                    helperText: "Used for preview image",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (title.text.isEmpty ||
+                          content.text.isEmpty ||
+                          pdf.text.isEmpty) {
+                        Get.snackbar(
+                          "Error",
+                          "Please fill all required fields",
+                        );
+                        return;
+                      }
+
+                      ctrl.addNote(
+                        title.text.trim(),
+                        content.text.trim(),
+                        pdf.text.trim(),
+                        thumb.text.trim(),
+                      );
+
+                      Get.back();
+                    },
+                    child: const Text("Save Note"),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              ctrl.addNote(title.text, content.text, pdf.text, thumb.text);
-              Get.back();
-            },
-            child: const Text("Save"),
-          ),
-        ],
       ),
     );
   }
 
-  /// ================= EDIT NOTE =================
-  void _editNoteDialog(AdminNotesController ctrl, note) {
+  void _editNoteDialog(AdminNotesController ctrl, dynamic note) {
     final title = TextEditingController(text: note.title);
     final content = TextEditingController(text: note.content);
     final pdf = TextEditingController(text: note.pdfUrl);
     final thumb = TextEditingController(text: note.thumbnail);
 
     Get.dialog(
-      AlertDialog(
-        title: const Text("Edit Note"),
-        content: SingleChildScrollView(
+      Dialog(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              TextField(controller: title),
-              TextField(controller: content),
-              TextField(controller: pdf),
-              TextField(controller: thumb),
+              const Text(
+                "Edit Note",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 10),
+
+              TextField(
+                controller: title,
+                decoration: const InputDecoration(
+                  hintText: "Update title",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              TextField(
+                controller: content,
+                decoration: const InputDecoration(
+                  hintText: "Update description",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              TextField(
+                controller: pdf,
+                decoration: const InputDecoration(
+                  hintText: "Update PDF URL",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              TextField(
+                controller: thumb,
+                decoration: const InputDecoration(
+                  hintText: "Update thumbnail",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ctrl.updateNote(
+                      note.id,
+                      title.text,
+                      content.text,
+                      pdf.text,
+                      thumb.text,
+                    );
+                    Get.back();
+                  },
+                  child: const Text("Update Note"),
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              ctrl.updateNote(
-                note.id,
-                title.text,
-                content.text,
-                pdf.text,
-                thumb.text,
-              );
-              Get.back();
-            },
-            child: const Text("Update"),
-          ),
-        ],
       ),
     );
   }
