@@ -1,3 +1,4 @@
+import 'package:edu_prep_academy/User/bindings/profile_binding.dart';
 import 'package:edu_prep_academy/User/controllers/dashboard_controller.dart';
 import 'package:edu_prep_academy/User/controllers/mock_test_controller.dart';
 import 'package:edu_prep_academy/User/controllers/notes_controller.dart';
@@ -26,6 +27,7 @@ class DashboardView extends GetView<DashboardController> {
             Get.put(MockTestsController());
             return MockTestsView();
           case 3:
+            ProfileBinding().dependencies();
             return const ProfileTab();
           default:
             return const HomeTab();

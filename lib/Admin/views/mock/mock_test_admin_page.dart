@@ -332,6 +332,11 @@ class AdminMockTestPage extends StatelessWidget {
 
                       ctrl.addMockTest(
                         title: title.text.trim(),
+                        categoryId: ctrl.selectedCategory.value,
+                        categoryName: ctrl.categories.firstWhere(
+                          (c) => c == ctrl.selectedCategory.value,
+                          orElse: () => '',
+                        ),
                         duration: dur,
                         questionsCount: ques,
                         thumbnail: thumbnail.text.trim(),

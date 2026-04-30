@@ -25,10 +25,38 @@ class QuestionsAdminPage extends StatelessWidget {
         children: [
           /// ADD BUTTON
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: ElevatedButton(
-              onPressed: () => _addDialog(ctrl),
-              child: const Text("+ Add Question"),
+            padding: const EdgeInsets.all(10.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _addDialog(ctrl),
+                    child: const Text("+ Add Question"),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _bulkDialog(ctrl),
+                    child: const Text("Bulk Upload"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => _confirmDeleteAll(ctrl),
+                icon: const Icon(Icons.delete_forever, color: Colors.red),
+                label: const Text(
+                  "Delete All",
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
             ),
           ),
 
@@ -77,6 +105,66 @@ class QuestionsAdminPage extends StatelessWidget {
                 },
               );
             }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  //=================== DELETE ALL CONFIRMATION =================
+  void _confirmDeleteAll(AdminQuestionsController ctrl) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Delete All Questions"),
+        content: const Text("Are you sure? This action cannot be undone."),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              await ctrl.deleteAllQuestions();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  //=================== BULK UPLOAD DIALOG =================
+  void _bulkDialog(AdminQuestionsController ctrl) {
+    final jsonCtrl = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Bulk Upload Questions"),
+        content: SizedBox(
+          width: 400,
+          child: TextField(
+            controller: jsonCtrl,
+            maxLines: 15,
+            decoration: const InputDecoration(
+              hintText: "Paste JSON here...",
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+
+              Get.dialog(
+                const Center(child: CircularProgressIndicator()),
+                barrierDismissible: false,
+              );
+
+              await ctrl.addBulkQuestions(jsonCtrl.text);
+
+              Get.back(); // close loader
+            },
+            child: const Text("Upload"),
           ),
         ],
       ),

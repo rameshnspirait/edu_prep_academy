@@ -28,26 +28,39 @@ class AdminMockTestController extends GetxController {
 
   // ================= CREATE MOCK TEST =================
   Future<void> addMockTest({
+    required String categoryId,
+    required String categoryName,
     required String title,
     required int duration,
     required int questionsCount,
     required String thumbnail,
     required bool isFree,
   }) async {
-    if (selectedCategory.value.isEmpty) return;
+    try {
+      final categoryRef = _firestore.collection('mock_tests').doc(categoryId);
 
-    await _firestore
-        .collection('mock_tests')
-        .doc(selectedCategory.value)
-        .collection('tests')
-        .add({
-          'title': title,
-          'duration': duration,
-          'questionsCount': questionsCount,
-          'thumbnail': thumbnail,
-          'isFree': isFree,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+      /// ✅ STEP 1: CREATE CATEGORY (IF NOT EXISTS)
+      await categoryRef.set({
+        'name': categoryName,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)); // 🔥 IMPORTANT (won’t overwrite)
+
+      /// ✅ STEP 2: ADD TEST INSIDE SUBCOLLECTION
+      final testRef = categoryRef.collection('tests').doc();
+
+      await testRef.set({
+        'testId': testRef.id,
+        'title': title,
+        'duration': duration,
+        'totalQuestions': questionsCount,
+        'thumbnail': thumbnail,
+        'isFree': isFree,
+        'categoryId': categoryId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print("Error: $e");
+    }
   }
 
   // ================= DELETE TEST =================

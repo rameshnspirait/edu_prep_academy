@@ -1,4 +1,5 @@
 import 'package:edu_prep_academy/User/controllers/auth_controller.dart';
+import 'package:edu_prep_academy/User/controllers/profile_controller.dart';
 import 'package:edu_prep_academy/User/core/constants/app_colors.dart';
 import 'package:edu_prep_academy/User/core/constants/app_strings.dart';
 import 'package:edu_prep_academy/User/core/theme/theme_controller.dart';
@@ -16,6 +17,7 @@ class ProfileTab extends StatelessWidget {
     final themeCtrl = Get.find<ThemeController>();
     final authCtrl = Get.find<AuthController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final profileCtrl = Get.find<ProfileController>();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -84,13 +86,25 @@ class ProfileTab extends StatelessWidget {
                   const SizedBox(height: 14),
 
                   /// QUICK STATS
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: const [
-                      _ProfileStat(title: "Tests", value: "42"),
-                      _ProfileStat(title: "Accuracy", value: "68%"),
-                      _ProfileStat(title: "Rank", value: "Top 12%"),
-                    ],
+                  Obx(
+                    () => Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _ProfileStat(
+                          title: "Tests",
+                          value: "${profileCtrl.totalTests.value}",
+                        ),
+                        _ProfileStat(
+                          title: "Accuracy",
+                          value:
+                              "${profileCtrl.accuracy.value.toStringAsFixed(1)}%",
+                        ),
+                        _ProfileStat(
+                          title: "Rank",
+                          value: "Top ${profileCtrl.rankPercent.value}%",
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

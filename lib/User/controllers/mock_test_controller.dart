@@ -30,6 +30,7 @@ class MockTestsController extends GetxController {
 
       for (final categoryDoc in categorySnap.docs) {
         final categoryId = categoryDoc.id;
+        print(categoryId);
 
         final testSnap = await _firestore
             .collection('mock_tests')

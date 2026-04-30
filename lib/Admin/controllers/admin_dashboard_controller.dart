@@ -45,10 +45,10 @@ class AdminDashboardController extends GetxController {
   Future<void> _getNotes() async {
     try {
       final snapshot = await FirebaseFirestore.instance
-          .collection('notes') // adjust if nested
+          .collectionGroup('items') // 🔥 key change
           .get();
 
-      totalNotes.value = snapshot.size;
+      totalNotes.value = snapshot.size; // total notes count
     } catch (e) {
       print("Notes count error: $e");
     }
