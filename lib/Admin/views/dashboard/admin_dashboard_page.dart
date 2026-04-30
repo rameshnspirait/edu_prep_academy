@@ -1,115 +1,243 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:edu_prep_academy/Admin/controllers/admin_dashboard_controller.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 800;
+    final ctrl = Get.put(AdminDashboardController());
+
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 600;
+    final isTablet = width >= 600 && width < 1100;
+
+    int crossAxisCount = 4;
+    if (isMobile) crossAxisCount = 1;
+    if (isTablet) crossAxisCount = 2;
 
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// 🔥 STATS CARDS
-          GridView.count(
-            crossAxisCount: isMobile ? 1 : 3,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            children: const [
-              _StatCard(
-                title: "Total Users",
-                value: "12,540",
-                icon: Icons.people,
-              ),
-              _StatCard(
-                title: "Revenue",
-                value: "₹1,24,000",
-                icon: Icons.currency_rupee,
-              ),
-              _StatCard(title: "Mock Tests", value: "320", icon: Icons.quiz),
-            ],
-          ),
+      padding: const EdgeInsets.all(20),
+      child: Obx(() {
+        if (ctrl.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          const SizedBox(height: 24),
+        final stats = [
+          _StatModel(
+            "Total Users",
+            ctrl.totalUsers.value.toString(),
+            Icons.people,
+          ),
+          _StatModel("Revenue", "₹${ctrl.revenue.value}", Icons.currency_rupee),
+          _StatModel(
+            "Mock Tests",
+            ctrl.totalTests.value.toString(),
+            Icons.quiz,
+          ),
+          _StatModel(
+            "Notes",
+            ctrl.totalNotes.value.toString(),
+            Icons.menu_book,
+          ),
+          _StatModel(
+            "Active Users",
+            ctrl.activeUsers.value.toString(),
+            Icons.show_chart,
+          ),
+        ];
 
-          /// 📊 CHART
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// ================= HEADER =================
+            const Text(
+              "Dashboard",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-            child: SizedBox(
-              height: 300,
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(show: true),
-                  titlesData: FlTitlesData(show: true),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      isCurved: true,
-                      spots: const [
-                        FlSpot(0, 3),
-                        FlSpot(1, 5),
-                        FlSpot(2, 4),
-                        FlSpot(3, 7),
-                        FlSpot(4, 6),
-                        FlSpot(5, 9),
-                      ],
-                    ),
-                  ],
-                ),
+            const SizedBox(height: 6),
+            const Text(
+              "Overview of your platform",
+              style: TextStyle(color: Colors.grey),
+            ),
+
+            const SizedBox(height: 20),
+
+            /// ================= STATS =================
+            GridView.builder(
+              itemCount: stats.length,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: isMobile ? 2.8 : 2.2,
+              ),
+              itemBuilder: (_, i) {
+                return _StatCard(model: stats[i]);
+              },
+            ),
+
+            const SizedBox(height: 30),
+
+            /// ================= CHART =================
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 12,
+                    color: Colors.black.withOpacity(0.05),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "User Growth",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    "Last 6 months performance",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    height: 280,
+                    child: Obx(() {
+                      final data = ctrl.monthlyUsers;
+
+                      if (data.isEmpty) {
+                        return const Center(child: Text("No Data"));
+                      }
+
+                      return LineChart(
+                        LineChartData(
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            getDrawingHorizontalLine: (value) {
+                              return FlLine(
+                                color: Colors.grey.withOpacity(0.2),
+                                strokeWidth: 1,
+                              );
+                            },
+                          ),
+                          titlesData: FlTitlesData(
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: true),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, _) {
+                                  const months = [
+                                    "Jan",
+                                    "Feb",
+                                    "Mar",
+                                    "Apr",
+                                    "May",
+                                    "Jun",
+                                  ];
+                                  return Text(
+                                    months[value.toInt()],
+                                    style: const TextStyle(fontSize: 10),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          lineBarsData: [
+                            LineChartBarData(
+                              isCurved: true,
+                              color: Colors.blue,
+                              barWidth: 3,
+                              dotData: FlDotData(show: false),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: Colors.blue.withOpacity(0.1),
+                              ),
+                              spots: List.generate(
+                                data.length,
+                                (i) => FlSpot(i.toDouble(), data[i]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      }),
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
+/// ================= MODEL =================
+class _StatModel {
   final String title;
   final String value;
   final IconData icon;
 
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-  });
+  _StatModel(this.title, this.value, this.icon);
+}
+
+/// ================= CARD =================
+class _StatCard extends StatelessWidget {
+  final _StatModel model;
+
+  const _StatCard({required this.model});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
-          BoxShadow(blurRadius: 10, color: Colors.black.withOpacity(0.05)),
+          BoxShadow(blurRadius: 12, color: Colors.black.withOpacity(0.04)),
         ],
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: Colors.blue.withOpacity(0.1),
-            child: Icon(icon, color: Colors.blue),
+          /// ICON
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(model.icon, color: Colors.blue),
           ),
-          const SizedBox(width: 16),
+
+          const SizedBox(width: 14),
+
+          /// TEXT
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(title, style: const TextStyle(color: Colors.grey)),
-              const SizedBox(height: 4),
               Text(
-                value,
+                model.title,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                model.value,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

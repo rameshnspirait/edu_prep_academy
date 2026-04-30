@@ -12,127 +12,166 @@ class AdminMockTestPage extends StatelessWidget {
     final ctrl = Get.put(AdminMockTestController());
     final width = MediaQuery.of(context).size.width;
 
-    /// 🔥 RESPONSIVE GRID
-    int crossAxisCount = 1;
-    if (width > 1200) {
-      crossAxisCount = 4;
-    } else if (width > 900) {
-      crossAxisCount = 3;
-    } else if (width > 600) {
-      crossAxisCount = 2;
-    }
+    final isMobile = width < 600;
+    final isTablet = width >= 600 && width < 1100;
+
+    int crossAxisCount = 4;
+    if (isMobile) crossAxisCount = 1;
+    if (isTablet) crossAxisCount = 2;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
-      body: Padding(
-        padding: EdgeInsets.all(width < 600 ? 12 : 20),
-        child: Obx(() {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// ================= HEADER =================
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                runSpacing: 10,
-                children: [
-                  const Text(
-                    "Mock Test Management",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-
-                  Wrap(
-                    spacing: 10,
-                    children: [
-                      _primaryButton(
-                        title: "+ Add Test",
-                        onTap: ctrl.selectedCategory.value.isEmpty
-                            ? null
-                            : () => _showAddTestDialog(ctrl, context),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 15),
-
-              /// ================= CATEGORY =================
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: ctrl.selectedCategory.value.isEmpty
-                        ? null
-                        : ctrl.selectedCategory.value,
-                    hint: const Text("Select Category"),
-                    isExpanded: true,
-                    items: ctrl.categories
-                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                        .toList(),
-                    onChanged: (v) {
-                      ctrl.selectedCategory.value = v ?? '';
-                    },
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              /// ================= LIST =================
-              Expanded(
-                child: ctrl.selectedCategory.value.isEmpty
-                    ? _empty("Please select category")
-                    : StreamBuilder(
-                        stream: FirebaseFirestore.instance
-                            .collection('mock_tests')
-                            .doc(ctrl.selectedCategory.value)
-                            .collection('tests')
-                            .orderBy('createdAt', descending: true)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-
-                          final docs = snapshot.data!.docs;
-
-                          if (docs.isEmpty) {
-                            return _empty("No tests found");
-                          }
-
-                          return GridView.builder(
-                            itemCount: docs.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  crossAxisSpacing: width < 600 ? 10 : 16,
-                                  mainAxisSpacing: width < 600 ? 10 : 16,
-                                  childAspectRatio: width < 600 ? 1.1 : 1.2,
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 12 : 20,
+            vertical: 16,
+          ),
+          child: Obx(() {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// ================= HEADER =================
+                isMobile
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Mock Test Management",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            "Manage and organize your tests",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: _primaryButton(
+                              title: "+ Add Test",
+                              onTap: ctrl.selectedCategory.value.isEmpty
+                                  ? null
+                                  : () => _showAddTestDialog(ctrl, context),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Mock Test Management",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                            itemBuilder: (_, i) {
-                              final data = docs[i].data();
-                              return _testCard(
-                                ctrl,
-                                docs[i].id,
-                                data,
-                                context,
-                                width,
-                              );
-                            },
-                          );
-                        },
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                "Manage and organize your tests",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                          _primaryButton(
+                            title: "+ Add Test",
+                            onTap: ctrl.selectedCategory.value.isEmpty
+                                ? null
+                                : () => _showAddTestDialog(ctrl, context),
+                          ),
+                        ],
                       ),
-              ),
-            ],
-          );
-        }),
+
+                const SizedBox(height: 16),
+
+                /// ================= CATEGORY =================
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: ctrl.selectedCategory.value.isEmpty
+                          ? null
+                          : ctrl.selectedCategory.value,
+                      hint: const Text("Select Category"),
+                      isExpanded: true,
+                      items: ctrl.categories
+                          .map(
+                            (c) => DropdownMenuItem(value: c, child: Text(c)),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        ctrl.selectedCategory.value = v ?? '';
+                      },
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                /// ================= LIST =================
+                Expanded(
+                  child: ctrl.selectedCategory.value.isEmpty
+                      ? _empty("Please select category")
+                      : StreamBuilder(
+                          stream: FirebaseFirestore.instance
+                              .collection('mock_tests')
+                              .doc(ctrl.selectedCategory.value)
+                              .collection('tests')
+                              .orderBy('createdAt', descending: true)
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+
+                            final docs = snapshot.data!.docs;
+
+                            if (docs.isEmpty) {
+                              return _empty("No tests found");
+                            }
+
+                            return GridView.builder(
+                              itemCount: docs.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: isMobile ? 1.05 : 1.2,
+                                  ),
+                              itemBuilder: (_, i) {
+                                final data = docs[i].data();
+                                return _testCard(
+                                  ctrl,
+                                  docs[i].id,
+                                  data,
+                                  context,
+                                  isMobile,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          }),
+        ),
       ),
     );
   }
@@ -143,45 +182,46 @@ class AdminMockTestPage extends StatelessWidget {
     String id,
     Map<String, dynamic> data,
     BuildContext context,
-    double width,
+    bool isMobile,
   ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(blurRadius: 6, color: Colors.black.withOpacity(0.05)),
+          BoxShadow(blurRadius: 8, color: Colors.black.withOpacity(0.05)),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           /// IMAGE
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: Image.network(
               data['thumbnail'] ?? '',
-              height: width < 600 ? 90 : 120,
+              height: isMobile ? 100 : 120,
               width: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  const SizedBox(height: 90, child: Icon(Icons.image)),
+              errorBuilder: (_, __, ___) => Container(
+                height: isMobile ? 100 : 120,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.image),
+              ),
             ),
           ),
 
-          /// TEXT
+          /// CONTENT
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   data['title'] ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   "${data['questionsCount']} Questions • ${data['duration']} min",
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
@@ -193,25 +233,28 @@ class AdminMockTestPage extends StatelessWidget {
           const Spacer(),
 
           /// ACTIONS
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.quiz),
-                onPressed: () {
-                  Get.to(
-                    () => QuestionsAdminPage(
-                      categoryId: ctrl.selectedCategory.value,
-                      testId: id,
-                    ),
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () => ctrl.deleteTest(id),
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.quiz, size: 18),
+                  onPressed: () {
+                    Get.to(
+                      () => QuestionsAdminPage(
+                        categoryId: ctrl.selectedCategory.value,
+                        testId: id,
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+                  onPressed: () => ctrl.deleteTest(id),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -220,7 +263,14 @@ class AdminMockTestPage extends StatelessWidget {
 
   // ================= BUTTON =================
   Widget _primaryButton({required String title, VoidCallback? onTap}) {
-    return ElevatedButton(onPressed: onTap, child: Text(title));
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Text(title),
+    );
   }
 
   // ================= EMPTY =================
@@ -230,7 +280,7 @@ class AdminMockTestPage extends StatelessWidget {
     );
   }
 
-  // ================= ADD TEST =================
+  // ================= DIALOG =================
   void _showAddTestDialog(AdminMockTestController ctrl, BuildContext context) {
     final title = TextEditingController();
     final duration = TextEditingController();
@@ -240,60 +290,23 @@ class AdminMockTestPage extends StatelessWidget {
 
     Get.dialog(
       Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16),
         child: SingleChildScrollView(
           child: Container(
-            width: MediaQuery.of(context).size.width < 600
-                ? double.infinity
-                : 420,
+            width: 420,
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 const Text(
                   "Create Mock Test",
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 12),
 
-                const SizedBox(height: 10),
-
-                TextField(
-                  controller: title,
-                  decoration: const InputDecoration(
-                    hintText: "Enter test title",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                TextField(
-                  controller: duration,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    hintText: "Duration (minutes)",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                TextField(
-                  controller: questions,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    hintText: "Number of questions",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                TextField(
-                  controller: thumbnail,
-                  decoration: const InputDecoration(
-                    hintText: "Thumbnail URL",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
+                _input(title, "Test Title"),
+                _input(duration, "Duration (minutes)", isNumber: true),
+                _input(questions, "Number of questions", isNumber: true),
+                _input(thumbnail, "Thumbnail URL"),
 
                 Obx(
                   () => SwitchListTile(
@@ -333,6 +346,20 @@ class AdminMockTestPage extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _input(TextEditingController c, String hint, {bool isNumber = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextField(
+        controller: c,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          hintText: hint,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
     );

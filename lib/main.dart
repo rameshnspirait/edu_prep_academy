@@ -1,4 +1,5 @@
 import 'package:edu_prep_academy/User/bindings/initial_bindings.dart';
+import 'package:edu_prep_academy/User/controllers/auth_controller.dart';
 import 'package:edu_prep_academy/User/core/theme/app_theme.dart';
 import 'package:edu_prep_academy/User/core/wrapper/auth_wrapper.dart';
 import 'package:edu_prep_academy/User/routes/app_pages.dart';
@@ -10,6 +11,7 @@ import 'package:get/get.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  Get.put(AuthController(), permanent: true);
   runApp(MyApp());
 }
 

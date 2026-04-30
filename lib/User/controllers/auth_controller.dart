@@ -181,7 +181,20 @@ class AuthController extends GetxController with SingleGetTickerProviderMixin {
         type: SnackbarType.success,
       );
 
-      Get.offAllNamed(AppRoutes.dashboard);
+      //  Fetch user role from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final role = userDoc.data()?['role'] ?? 'student';
+
+      //  ROLE BASED NAVIGATION
+      if (role == 'admin') {
+        Get.offAllNamed(AppRoutes.adminHome);
+      } else {
+        Get.offAllNamed(AppRoutes.dashboard);
+      }
     } on FirebaseAuthException {
       onOtpError();
     } finally {
