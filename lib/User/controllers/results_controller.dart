@@ -9,7 +9,6 @@ class ResultsController extends GetxController {
   final RxBool isLoading = true.obs;
   final RxString error = ''.obs;
 
-  /// categoryName -> list of test results
   final RxMap<String, List<Map<String, dynamic>>> results =
       <String, List<Map<String, dynamic>>>{}.obs;
 
@@ -19,11 +18,9 @@ class ResultsController extends GetxController {
     fetchResults();
   }
 
-  // =====================================================
-  // FETCH RESULTS (MATCHES mock_attempts STRUCTURE)
-  // =====================================================
   Future<void> fetchResults() async {
     final user = _auth.currentUser;
+
     if (user == null) {
       error.value = "User not logged in";
       isLoading.value = false;
@@ -35,122 +32,119 @@ class ResultsController extends GetxController {
       error.value = '';
       results.clear();
 
-      // ---------------- LOAD CATEGORIES ----------------
-      final categorySnap = await _firestore.collection('mock_categories').get();
-      final Map<String, String> categories = {
-        for (final doc in categorySnap.docs)
-          doc.id: (doc.data()['title'] ?? 'Other').toString(),
-      };
+      ///  LOAD ALL TESTS
+      final Map<String, Map<String, dynamic>> tests = {};
 
-      // ---------------- LOAD TESTS ----------------
-      final testSnap = await _firestore.collection('mock_tests').get();
-      final Map<String, Map<String, dynamic>> tests = {
-        for (final doc in testSnap.docs)
-          doc.id: {...doc.data(), "testId": doc.id},
-      };
+      final mainSnap = await _firestore.collection('mock_tests').get();
 
-      // ---------------- LOAD USER MOCK ATTEMPTS ----------------
+      for (final mainDoc in mainSnap.docs) {
+        final subSnap = await mainDoc.reference.collection('tests').get();
+
+        for (final testDoc in subSnap.docs) {
+          tests[testDoc.id] = {
+            ...testDoc.data(),
+            "testId": testDoc.id,
+            "category": mainDoc.id, // SSC_GD
+          };
+        }
+      }
+
+      /// ✅ LOAD USER ATTEMPTS
       final attemptSnap = await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('mock_attempts')
           .get();
 
+      if (attemptSnap.docs.isEmpty) {
+        error.value = "No attempts found";
+        return;
+      }
+
       for (final doc in attemptSnap.docs) {
         final attempt = doc.data();
-        final String testId = doc.id;
 
-        if (!tests.containsKey(testId)) continue;
+        /// 🔥 IMPORTANT FIX HERE
+        final String testId = attempt['testId'] ?? doc.id; // fallback safety
+
+        if (!tests.containsKey(testId)) {
+          print("❌ Test not found for testId: $testId");
+          continue;
+        }
 
         final test = tests[testId]!;
-        final String categoryId = test['categoryId'] ?? '';
-        final String categoryName = categories[categoryId] ?? 'Other';
 
-        // ---------------- SAFE NUMBER HANDLING ----------------
-        final int bestObtainedMarks = (attempt['bestObtainedMarks'] ?? 0)
-            .toInt();
-        final int bestTotalMarks =
-            (attempt['bestTotalMarks'] ?? test['totalMarks'] ?? 1).toInt();
         final int bestScore = (attempt['bestScore'] ?? 0).toInt();
-        final int bestAccuracy = (attempt['bestAccuracy'] ?? 0).toInt();
-        final int attemptsCount = (attempt['attemptCount'] ?? 1).toInt();
-        final String status = attempt['status'] ?? 'UNKNOWN';
-        final Timestamp? updatedAt = attempt['updatedAt'];
-        final int correctAnswered = attempt['correctAnswered'] ?? 0;
-        final int totalQuestions = attempt['totalQuestions'] ?? 1;
 
-        // ---------------- RANK & PERCENTILE ----------------
-        final int rank = await _calculateRank(testId, bestScore);
-        final int totalStudents = await _calculateTotalStudents(testId);
+        /// 🔥 RANK CALCULATION (FIXED)
+        int rank = 1;
+        int totalStudents = 0;
+
+        final usersSnap = await _firestore.collection('users').get();
+
+        for (final userDoc in usersSnap.docs) {
+          final attemptDoc = await userDoc.reference
+              .collection('mock_attempts')
+              .where('testId', isEqualTo: testId)
+              .limit(1)
+              .get();
+
+          if (attemptDoc.docs.isNotEmpty) {
+            totalStudents++;
+
+            final score = (attemptDoc.docs.first.data()['bestScore'] ?? 0)
+                .toInt();
+
+            if (score > bestScore) {
+              rank++;
+            }
+          }
+        }
+
         final double percentile = totalStudents > 1
-            ? ((totalStudents - rank) / (totalStudents - 1)) * 100
+            ? ((totalStudents - rank) / totalStudents) * 100
             : 100;
 
         final resultItem = {
           "testId": testId,
           "testName": test['title'] ?? 'Mock Test',
-          "obtainedMarks": bestObtainedMarks,
-          "totalMarks": bestTotalMarks,
-          "accuracy": bestAccuracy,
-          "totalQuestions": totalQuestions,
-          "correctAnswered": correctAnswered,
-          "attempts": attemptsCount,
-          "status": status,
-          "date": updatedAt,
+          "obtainedMarks": (attempt['bestObtainedMarks'] ?? 0).toInt(),
+          "totalMarks": (attempt['bestTotalMarks'] ?? test['totalMarks'] ?? 1)
+              .toInt(),
+          "accuracy": (attempt['bestAccuracy'] ?? 0).toInt(),
+          "totalQuestions": (attempt['totalQuestions'] ?? 1).toInt(),
+          "correctAnswered": (attempt['correctAnswered'] ?? 0).toInt(),
+          "attempts": (attempt['attemptCount'] ?? 1).toInt(),
+          "status": attempt['status'] ?? 'UNKNOWN',
+          "date": attempt['updatedAt'],
           "rank": rank,
           "percentile": percentile,
           "totalStudents": totalStudents,
         };
 
-        results.putIfAbsent(categoryName, () => []);
-        results[categoryName]!.add(resultItem);
+        final groupKey = test['title'] ?? 'Mock Test';
+
+        results.putIfAbsent(groupKey, () => []);
+        results[groupKey]!.add(resultItem);
+      }
+
+      /// ✅ SORT
+      results.forEach((key, value) {
+        value.sort((a, b) {
+          final aDate = a['date'] as Timestamp?;
+          final bDate = b['date'] as Timestamp?;
+          return (bDate ?? Timestamp.now()).compareTo(aDate ?? Timestamp.now());
+        });
+      });
+
+      if (results.isEmpty) {
+        error.value = "No data mapped (check testId mapping)";
       }
     } catch (e) {
-      error.value = e.toString();
+      error.value = "Error: $e";
+      print("🔥 ERROR: $e");
     } finally {
       isLoading.value = false;
     }
-  }
-
-  // =====================================================
-  // GLOBAL RANK CALCULATION (BASED ON bestScore)
-  // =====================================================
-  Future<int> _calculateRank(String testId, int bestScore) async {
-    try {
-      final usersSnap = await _firestore.collection('users').get();
-
-      int higherScoreCount = 0;
-
-      for (var userDoc in usersSnap.docs) {
-        final attemptsSnap = await userDoc.reference
-            .collection('mock_attempts')
-            .doc(testId)
-            .get();
-
-        if (attemptsSnap.exists) {
-          final score = (attemptsSnap.data()?['bestScore'] ?? 0).toInt();
-          if (score > bestScore) higherScoreCount++;
-        }
-      }
-
-      return higherScoreCount + 1;
-    } catch (e) {
-      print("Rank calculation error: $e");
-      return -1;
-    }
-  }
-
-  // =====================================================
-  // TOTAL STUDENTS COUNT FOR THIS TEST
-  // =====================================================
-  Future<int> _calculateTotalStudents(String testId) async {
-    final snap = await FirebaseFirestore.instance
-        .collection('test_leaderboard')
-        .doc(testId)
-        .collection('results')
-        .get();
-
-    final totalUsers = snap.docs.length;
-    return totalUsers;
   }
 }
