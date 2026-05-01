@@ -8,7 +8,7 @@ import 'package:edu_prep_academy/User/bindings/results_binding.dart';
 import 'package:edu_prep_academy/User/bindings/start_test_binding.dart';
 import 'package:edu_prep_academy/User/views/auth/login_view.dart';
 import 'package:edu_prep_academy/User/views/dashbaord/dashboard_view.dart';
-import 'package:edu_prep_academy/User/views/dashbaord/profile_tab.dart';
+import 'package:edu_prep_academy/User/views/profile/profile_view.dart';
 import 'package:edu_prep_academy/User/views/mocks/mock_tests_view.dart';
 import 'package:edu_prep_academy/User/views/mocks/start_test_view.dart';
 import 'package:edu_prep_academy/User/views/notes/note_view.dart';
@@ -59,7 +59,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.profile,
-      page: () => ProfileTab(),
+      page: () => ProfileView(),
       binding: ProfileBinding(),
       transition: Transition.fadeIn,
     ),

@@ -2,8 +2,9 @@ import 'package:edu_prep_academy/User/bindings/profile_binding.dart';
 import 'package:edu_prep_academy/User/controllers/dashboard_controller.dart';
 import 'package:edu_prep_academy/User/controllers/mock_test_controller.dart';
 import 'package:edu_prep_academy/User/controllers/notes_controller.dart';
+import 'package:edu_prep_academy/User/controllers/profile_controller.dart';
 import 'package:edu_prep_academy/User/views/dashbaord/home_tab.dart';
-import 'package:edu_prep_academy/User/views/dashbaord/profile_tab.dart';
+import 'package:edu_prep_academy/User/views/profile/profile_view.dart';
 import 'package:edu_prep_academy/User/views/mocks/mock_tests_view.dart';
 import 'package:edu_prep_academy/User/views/notes/note_view.dart';
 import 'package:edu_prep_academy/User/widgets/custom_bottom_nav.dart';
@@ -27,8 +28,9 @@ class DashboardView extends GetView<DashboardController> {
             Get.put(MockTestsController());
             return MockTestsView();
           case 3:
-            ProfileBinding().dependencies();
-            return const ProfileTab();
+            Get.delete<ProfileController>();
+            Get.put(ProfileController());
+            return const ProfileView();
           default:
             return const HomeTab();
         }

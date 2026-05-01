@@ -30,7 +30,7 @@ class ProfileController extends GetxController {
     try {
       isLoading.value = true;
 
-      /// ✅ 1. FETCH USER BASIC INFO
+      ///  1. FETCH USER BASIC INFO
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
 
       if (userDoc.exists) {

@@ -8,8 +8,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class ProfileTab extends StatelessWidget {
-  const ProfileTab({super.key});
+class ProfileView extends GetView<ProfileController> {
+  const ProfileView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,6 @@ class ProfileTab extends StatelessWidget {
     final themeCtrl = Get.find<ThemeController>();
     final authCtrl = Get.find<AuthController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final profileCtrl = Get.find<ProfileController>();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -92,16 +91,16 @@ class ProfileTab extends StatelessWidget {
                       children: [
                         _ProfileStat(
                           title: "Tests",
-                          value: "${profileCtrl.totalTests.value}",
+                          value: "${controller.totalTests.value}",
                         ),
                         _ProfileStat(
                           title: "Accuracy",
                           value:
-                              "${profileCtrl.accuracy.value.toStringAsFixed(1)}%",
+                              "${controller.accuracy.value.toStringAsFixed(1)}%",
                         ),
                         _ProfileStat(
                           title: "Rank",
-                          value: "Top ${profileCtrl.rankPercent.value}%",
+                          value: "Top ${controller.rankPercent.value}%",
                         ),
                       ],
                     ),
