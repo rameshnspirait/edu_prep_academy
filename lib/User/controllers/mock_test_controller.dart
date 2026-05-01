@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -10,44 +11,78 @@ class MockTestsController extends GetxController {
       <String, List<Map<String, dynamic>>>{}.obs;
 
   final RxBool isLoading = true.obs;
+  final RxBool isLoadingMore = false.obs;
 
   final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  /// pagination cursor per category
+  final Map<String, DocumentSnapshot> _lastDocs = {};
+
+  /// scroll controller for pagination
+  final ScrollController scrollController = ScrollController();
 
   @override
   void onInit() {
     super.onInit();
     fetchMockTests();
+
+    /// infinite scroll listener
+    scrollController.addListener(() {
+      if (scrollController.position.pixels >=
+          scrollController.position.maxScrollExtent - 200) {
+        fetchMockTests(loadMore: true);
+      }
+    });
   }
 
   // ================= FETCH TESTS =================
-  Future<void> fetchMockTests() async {
+  Future<void> fetchMockTests({bool loadMore = false}) async {
     try {
-      isLoading.value = true;
+      if (loadMore) {
+        isLoadingMore.value = true;
+      } else {
+        isLoading.value = true;
+      }
 
-      final Map<String, List<Map<String, dynamic>>> temp = {};
+      final Map<String, List<Map<String, dynamic>>> temp = loadMore
+          ? Map.from(categoryTests)
+          : {};
+
+      /// ✅ FETCH ALL ATTEMPTS ONCE
+      final attemptsMap = await _getAllAttempts();
 
       final categorySnap = await _firestore.collection('mock_tests').get();
 
       for (final categoryDoc in categorySnap.docs) {
         final categoryId = categoryDoc.id;
-        print(categoryId);
 
-        final testSnap = await _firestore
+        Query query = _firestore
             .collection('mock_tests')
             .doc(categoryId)
             .collection('tests')
             .orderBy('createdAt', descending: true)
-            .get();
+            .limit(10);
+
+        /// pagination support
+        if (loadMore && _lastDocs.containsKey(categoryId)) {
+          query = query.startAfterDocument(_lastDocs[categoryId]!);
+        }
+
+        final testSnap = await query.get();
 
         if (testSnap.docs.isEmpty) continue;
 
-        final List<Map<String, dynamic>> tests = [];
+        /// save last document
+        _lastDocs[categoryId] = testSnap.docs.last;
+
+        final List<Map<String, dynamic>> tests =
+            loadMore && temp.containsKey(categoryId) ? temp[categoryId]! : [];
 
         for (final doc in testSnap.docs) {
-          final data = doc.data();
+          final data = doc.data() as Map<String, dynamic>;
 
-          /// 🔥 ATTEMPT LOGIC
-          final attemptData = await _getAttemptData(categoryId, doc.id);
+          /// ✅ FAST LOCAL ATTEMPT CHECK
+          final attemptData = _getAttemptFromCache(attemptsMap, doc.id);
 
           tests.add({
             'id': doc.id,
@@ -58,8 +93,6 @@ class MockTestsController extends GetxController {
             'isFree': data['isFree'] ?? true,
             'questions': data['questionsCount'] ?? 0,
             'createdAt': data['createdAt'] ?? Timestamp.now(),
-
-            /// 🔒 LOCK SYSTEM
             'isLocked': attemptData['isLocked'],
             'lockMessage': attemptData['message'],
           });
@@ -70,75 +103,82 @@ class MockTestsController extends GetxController {
 
       categoryTests.assignAll(temp);
     } catch (e) {
-      print("Error: $e");
+      print("Fetch error: $e");
     } finally {
       isLoading.value = false;
+      isLoadingMore.value = false;
     }
   }
 
-  // ================= ATTEMPT CHECK =================
-  Future<Map<String, dynamic>> _getAttemptData(
-    String categoryId,
+  // ================= FETCH ALL ATTEMPTS =================
+  Future<Map<String, dynamic>> _getAllAttempts() async {
+    if (userId.isEmpty) return {};
+
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('mock_attempts')
+        .get();
+
+    final Map<String, dynamic> attempts = {};
+
+    for (var doc in snapshot.docs) {
+      attempts[doc.id] = doc.data();
+    }
+
+    return attempts;
+  }
+
+  // ================= LOCAL ATTEMPT CHECK =================
+  Map<String, dynamic> _getAttemptFromCache(
+    Map<String, dynamic> attemptsMap,
     String testId,
-  ) async {
-    try {
-      if (userId.isEmpty) {
-        return {'isLocked': true, 'message': 'Login required'};
-      }
-
-      final doc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('mock_attempts') // ✅ FIXED (consistent)
-          .doc(testId)
-          .get();
-
-      if (!doc.exists) {
-        return {'isLocked': false, 'message': ''};
-      }
-
-      final data = doc.data()!;
-
-      int count = data['attemptCount'] ?? 0;
-      Timestamp? last = data['updatedAt'];
-
-      /// ✅ Allow if less than 3 attempts
-      if (count < 3) {
-        return {'isLocked': false, 'message': ''};
-      }
-
-      /// ⏳ Check 24-hour cooldown
-      if (last != null) {
-        final lastTime = last.toDate();
-        final now = DateTime.now();
-
-        final diff = now.difference(lastTime);
-
-        /// ✅ AUTO UNLOCK AFTER 24H
-        if (diff.inHours >= 24) {
-          return {'isLocked': false, 'message': ''};
-        } else {
-          final remaining = 24 - diff.inHours;
-
-          return {'isLocked': true, 'message': "Try again in $remaining hrs"};
-        }
-      }
-
-      return {'isLocked': false, 'message': ''};
-    } catch (e) {
-      print("Attempt error: $e");
+  ) {
+    if (!attemptsMap.containsKey(testId)) {
       return {'isLocked': false, 'message': ''};
     }
+
+    final data = attemptsMap[testId];
+
+    int count = data['attemptCount'] ?? 0;
+    Timestamp? last = data['updatedAt'];
+
+    /// allow if < 3
+    if (count < 3) {
+      return {'isLocked': false, 'message': ''};
+    }
+
+    /// 24h cooldown
+    if (last != null) {
+      final diff = DateTime.now().difference(last.toDate());
+
+      if (diff.inHours >= 24) {
+        return {'isLocked': false, 'message': ''};
+      } else {
+        final remaining = 24 - diff.inHours;
+        return {'isLocked': true, 'message': "Try again in $remaining hrs"};
+      }
+    }
+
+    return {'isLocked': false, 'message': ''};
   }
 
   // ================= START TEST =================
   Future<void> startTest(String testId) async {
     if (userId.isEmpty) return;
 
+    /// ONLY NAVIGATE (no attempt increment here)
+    Get.toNamed('/start-test', arguments: {'testId': testId});
+  }
+
+  // ================= INCREASE ATTEMPT (CALL AFTER SUBMIT) =================
+  Future<void> increaseAttempt(String testId) async {
+    if (userId.isEmpty) return;
+
     final ref = _firestore
         .collection('users')
         .doc(userId)
-        .collection('mock_attempts') // ✅ FIXED (same collection)
+        .collection('mock_attempts')
         .doc(testId);
 
     final doc = await ref.get();
@@ -153,7 +193,6 @@ class MockTestsController extends GetxController {
       if (last != null) {
         final diff = DateTime.now().difference(last.toDate()).inHours;
 
-        /// 🔥 AUTO RESET AFTER 24H
         if (diff >= 24) {
           count = 1;
         } else {
@@ -167,7 +206,7 @@ class MockTestsController extends GetxController {
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    /// 🔄 refresh UI
+    /// refresh UI instantly
     fetchMockTests();
   }
 }

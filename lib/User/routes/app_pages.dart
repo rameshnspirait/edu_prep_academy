@@ -1,5 +1,6 @@
 import 'package:edu_prep_academy/Admin/bindings/admin_binding.dart';
 import 'package:edu_prep_academy/Admin/views/home/admin_home_page.dart';
+import 'package:edu_prep_academy/User/bindings/daily_quiz_binding.dart';
 import 'package:edu_prep_academy/User/bindings/initial_bindings.dart';
 import 'package:edu_prep_academy/User/bindings/mock_test_binding.dart';
 import 'package:edu_prep_academy/User/bindings/notes_binding.dart';
@@ -7,6 +8,7 @@ import 'package:edu_prep_academy/User/bindings/profile_binding.dart';
 import 'package:edu_prep_academy/User/bindings/results_binding.dart';
 import 'package:edu_prep_academy/User/bindings/start_test_binding.dart';
 import 'package:edu_prep_academy/User/views/auth/login_view.dart';
+import 'package:edu_prep_academy/User/views/dailyquiz/daily_quiz_view.dart';
 import 'package:edu_prep_academy/User/views/dashbaord/dashboard_view.dart';
 import 'package:edu_prep_academy/User/views/profile/profile_view.dart';
 import 'package:edu_prep_academy/User/views/mocks/mock_tests_view.dart';
@@ -61,6 +63,12 @@ class AppPages {
       name: AppRoutes.profile,
       page: () => ProfileView(),
       binding: ProfileBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.dailyQuiz,
+      page: () => DailyQuizView(),
+      binding: DailyQuizBinding(),
       transition: Transition.fadeIn,
     ),
 

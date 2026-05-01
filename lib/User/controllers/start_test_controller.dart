@@ -9,6 +9,7 @@ class StartTestController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  /// ================= STATE =================
   final RxList<Map<String, dynamic>> questions = <Map<String, dynamic>>[].obs;
   final RxInt currentIndex = 0.obs;
   final RxInt timeLeft = 0.obs;
@@ -23,44 +24,101 @@ class StartTestController extends GetxController {
   Timer? _timer;
 
   late String testId;
-  late String categoryId; // ✅ NEW
+  late String categoryId;
   late int duration;
+
+  ///  MODE
+  bool isDailyQuiz = false;
+  Map<String, dynamic>? quizData;
 
   static const int maxAttempts = 3;
 
+  /// ================= INIT =================
   @override
   void onInit() {
     super.onInit();
 
-    final args = Get.arguments;
+    final args = Get.arguments ?? {};
 
-    if (args == null ||
-        !args.containsKey('testId') ||
-        !args.containsKey('duration') ||
-        !args.containsKey('categoryId')) {
-      Get.back();
-      return;
+    isDailyQuiz = args['isDailyQuiz'] ?? false;
+
+    if (isDailyQuiz) {
+      /// ===== DAILY QUIZ =====
+      quizData = args['quizData'];
+      duration = quizData?['time'] ?? 10;
+
+      _initializeDailyQuiz();
+    } else {
+      /// ===== MOCK TEST =====
+      if (!args.containsKey('testId') ||
+          !args.containsKey('duration') ||
+          !args.containsKey('categoryId')) {
+        Get.back();
+        return;
+      }
+
+      testId = args['testId'];
+      duration = args['duration'];
+      categoryId = args['categoryId'];
+
+      _checkAttemptsThenInit();
     }
-
-    testId = args['testId'];
-    duration = args['duration'];
-    categoryId = args['categoryId']; // ✅ FIXED
-
-    _checkAttemptsThenInit();
   }
 
-  // ================= ATTEMPT CHECK =================
+  /// ================= DAILY QUIZ =================
+  void _initializeDailyQuiz() {
+    _timer?.cancel();
+
+    selectedAnswers.clear();
+    currentIndex.value = 0;
+    isPaused.value = false;
+    warningShown.value = false;
+
+    timeLeft.value = duration * 60;
+
+    _loadDailyQuiz();
+  }
+
+  Future<void> _loadDailyQuiz() async {
+    try {
+      isLoading.value = true;
+
+      ///  TEMP DATA (replace with Firebase later)
+      questions.value = [
+        {
+          'question': "Today's GK Question?",
+          'options': ["A", "B", "C", "D"],
+          'correctIndex': 1,
+          'marks': 1,
+        },
+        {
+          'question': "Math Quick Question?",
+          'options': ["10", "20", "30", "40"],
+          'correctIndex': 2,
+          'marks': 1,
+        },
+      ];
+
+      _startTimer();
+    } catch (e) {
+      debugPrint("Daily Quiz Error: $e");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// ================= MOCK TEST =================
   Future<void> _checkAttemptsThenInit() async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final docRef = _firestore
+    final ref = _firestore
         .collection('users')
         .doc(user.uid)
         .collection('mock_attempts')
         .doc(testId);
 
-    final snap = await docRef.get();
+    final snap = await ref.get();
     final data = snap.data();
 
     final attempts = data?['attemptCount'] ?? 0;
@@ -68,7 +126,7 @@ class StartTestController extends GetxController {
 
     attemptCount.value = attempts;
 
-    /// ✅ 24H LOGIC
+    ///  24H LOCK LOGIC
     if (attempts >= maxAttempts && last != null) {
       final diff = DateTime.now().difference(last.toDate());
 
@@ -82,18 +140,15 @@ class StartTestController extends GetxController {
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
-
         return;
       }
     }
 
-    /// ✅ ALLOW TEST
     isAttemptLimitReached.value = false;
-    _initializeTest();
+    _initializeMockTest();
   }
 
-  // ================= INIT =================
-  void _initializeTest() {
+  void _initializeMockTest() {
     _timer?.cancel();
 
     selectedAnswers.clear();
@@ -103,34 +158,23 @@ class StartTestController extends GetxController {
 
     timeLeft.value = duration * 60;
 
-    _loadTest();
+    _loadMockTest();
   }
 
-  // ================= LOAD QUESTIONS =================
-  Future<void> _loadTest() async {
+  Future<void> _loadMockTest() async {
     try {
       isLoading.value = true;
 
       final snapshot = await _firestore
           .collection('mock_tests')
-          .doc(categoryId) // ✅ FIXED
+          .doc(categoryId)
           .collection('tests')
           .doc(testId)
           .collection('questions')
           .orderBy('createdAt')
           .get();
 
-      /// ❗ SAFETY CHECK
       if (snapshot.docs.isEmpty) {
-        isLoading.value = false;
-
-        Get.snackbar(
-          "Error",
-          "No questions found for this test",
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-
         Get.back();
         return;
       }
@@ -143,7 +187,6 @@ class StartTestController extends GetxController {
             'question': data['question'] ?? '',
             'options': List<String>.from(data['options'] ?? []),
             'correctIndex': data['correctIndex'] ?? 0,
-            'explanation': data['explanation'] ?? '',
             'marks': data['marks'] ?? 1,
           };
         }).toList(),
@@ -151,23 +194,18 @@ class StartTestController extends GetxController {
 
       _startTimer();
     } catch (e) {
-      print("Error loading questions: $e");
+      debugPrint("Mock Test Error: $e");
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ================= TIMER =================
+  /// ================= TIMER =================
   void _startTimer() {
     _timer?.cancel();
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (isPaused.value) return;
-
-      if (timeLeft.value == 60 && !warningShown.value) {
-        warningShown.value = true;
-        Get.snackbar('⏰ 1 Minute Left', 'Please review your answers');
-      }
 
       if (timeLeft.value <= 0) {
         timer.cancel();
@@ -178,7 +216,7 @@ class StartTestController extends GetxController {
     });
   }
 
-  // ================= ANSWERS =================
+  /// ================= ANSWERS =================
   void selectOption(int optionIndex) {
     selectedAnswers[currentIndex.value] = optionIndex;
   }
@@ -189,160 +227,85 @@ class StartTestController extends GetxController {
     }
   }
 
-  // ================= SUBMIT =================
+  /// ================= SUBMIT =================
   Future<void> submitTest({bool autoSubmit = false}) async {
     _timer?.cancel();
 
-    double obtainedMarks = 0;
-    double totalMarks = 0;
-    int correctAnswered = 0;
-    int wrongAnswered = 0;
+    int correct = 0;
 
     for (int i = 0; i < questions.length; i++) {
-      final q = questions[i];
-      final double marks = (q['marks'] ?? 1).toDouble();
-      totalMarks += marks;
-
-      if (selectedAnswers.containsKey(i)) {
-        if (selectedAnswers[i] == q['correctIndex']) {
-          obtainedMarks += marks;
-          correctAnswered++;
-        } else {
-          wrongAnswered++;
-        }
+      if (selectedAnswers[i] == questions[i]['correctIndex']) {
+        correct++;
       }
     }
 
-    final int score = totalMarks == 0
-        ? 0
-        : ((obtainedMarks / totalMarks) * 100).round();
+    final score = ((correct / questions.length) * 100).round();
 
-    final double accuracy = questions.isEmpty
-        ? 0
-        : (correctAnswered / questions.length) * 100;
-
-    final int timeTaken = (duration * 60) - timeLeft.value;
-
-    final status = score >= 80
-        ? 'EXCELLENT'
-        : score >= 50
-        ? 'GOOD'
-        : 'FAILED';
-
-    /// 🎯 RESULT DIALOG
+    /// 🎯 RESULT
     Get.dialog(
       ResultDialog(
         score: score,
-        correct: correctAnswered,
+        correct: correct,
         total: questions.length,
-        obtainedMarks: obtainedMarks,
-        totalMarks: totalMarks,
+        obtainedMarks: correct.toDouble(),
+        totalMarks: questions.length.toDouble(),
       ),
       barrierDismissible: false,
     );
 
-    /// 💾 SAVE
-    await _saveAttempt(
-      obtainedMarks,
-      totalMarks,
-      correctAnswered,
-      wrongAnswered,
-      score,
-      accuracy,
-      timeTaken,
-      status,
-      autoSubmit,
-    );
-
-    attemptCount.value++;
-    isAttemptLimitReached.value = attemptCount.value >= maxAttempts;
+    /// 🔥 SAVE ONLY FOR MOCK TEST
+    if (!isDailyQuiz) {
+      await _saveAttempt(correct, score, autoSubmit);
+    }
   }
 
-  // ================= SAVE ATTEMPT =================
-  Future<void> _saveAttempt(
-    double obtainedMarks,
-    double totalMarks,
-    int correctAnswered,
-    int wrongAnswered,
-    int score,
-    double accuracy,
-    int timeTaken,
-    String status,
-    bool autoSubmit,
-  ) async {
+  /// ================= SAVE ATTEMPT =================
+  Future<void> _saveAttempt(int correct, int score, bool autoSubmit) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final userAttemptRef = _firestore
+    final ref = _firestore
         .collection('users')
         .doc(user.uid)
         .collection('mock_attempts')
         .doc(testId);
 
-    final snap = await userAttemptRef.get();
+    final snap = await ref.get();
     final data = snap.data() ?? {};
 
     final int attempts = (data['attemptCount'] ?? 0) + 1;
 
-    final double prevBestMarks = (data['bestObtainedMarks'] ?? 0).toDouble();
-
-    final double prevBestAccuracy = (data['bestAccuracy'] ?? 0).toDouble();
-
-    bool isNewBest =
-        obtainedMarks > prevBestMarks ||
-        (obtainedMarks == prevBestMarks && accuracy > prevBestAccuracy);
-
-    final Map<String, dynamic> updateData = {
+    await ref.set({
       'testId': testId,
       'attemptCount': attempts,
-      'totalQuestions': questions.length,
-      'lastAttemptScore': score,
-      'lastAccuracy': accuracy,
-      'lastTimeTaken': timeTaken,
-      'correctAnswered': correctAnswered,
-      'wrongAnswered': wrongAnswered,
+      'lastScore': score,
+      'correct': correct,
       'autoSubmitted': autoSubmit,
-      'updatedAt': FieldValue.serverTimestamp(), // ✅ IMPORTANT
-    };
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
-    if (isNewBest || !snap.exists) {
-      updateData.addAll({
-        'bestObtainedMarks': obtainedMarks,
-        'bestTotalMarks': totalMarks,
-        'bestScore': score,
-        'bestAccuracy': accuracy,
-        'bestTimeTaken': timeTaken,
-        'status': status,
-      });
+    /// 🔥 UPDATE LOCAL STATE
+    attemptCount.value = attempts;
+
+    if (attempts >= maxAttempts) {
+      isAttemptLimitReached.value = true;
     }
-
-    if (!snap.exists) {
-      updateData['createdAt'] = FieldValue.serverTimestamp();
-    }
-
-    await userAttemptRef.set(updateData, SetOptions(merge: true));
-
-    final attemptHistoryRef = userAttemptRef.collection('history').doc();
-
-    await attemptHistoryRef.set({
-      'score': score,
-      'accuracy': accuracy,
-      'correctAnswered': correctAnswered,
-      'wrongAnswered': wrongAnswered,
-      'timeTaken': timeTaken,
-      'status': status,
-      'autoSubmitted': autoSubmit,
-      'submittedAt': FieldValue.serverTimestamp(),
-    });
   }
 
-  // ================= RESET =================
+  /// ================= RESET =================
   Future<void> resetTestAndCloseDialog(BuildContext context) async {
-    if (isAttemptLimitReached.value) return;
+    if (Get.isDialogOpen ?? false) {
+      Navigator.pop(context);
+    }
 
-    if (Get.isDialogOpen ?? false) Navigator.pop(context);
+    /// Daily Quiz → Exit
+    if (isDailyQuiz) {
+      Get.back();
+      return;
+    }
 
-    _initializeTest();
+    /// Re-check attempts before restart
+    await _checkAttemptsThenInit();
   }
 
   @override

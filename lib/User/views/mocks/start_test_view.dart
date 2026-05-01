@@ -1,3 +1,4 @@
+import 'package:edu_prep_academy/User/controllers/mock_test_controller.dart';
 import 'package:edu_prep_academy/User/controllers/start_test_controller.dart';
 import 'package:edu_prep_academy/User/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
@@ -131,9 +132,19 @@ class StartTestView extends GetView<StartTestController> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              Get.back();
-              Get.back();
+              Get.back(); // close dialog
+
+              /// reset only test controller
+              Get.delete<StartTestController>(force: true);
+
+              /// reload mock test controller
+              if (Get.isRegistered<MockTestsController>()) {
+                Get.find<MockTestsController>().fetchMockTests();
+              }
+
+              Get.back(); // go back
             },
+
             child: const Text('Quit'),
           ),
         ],

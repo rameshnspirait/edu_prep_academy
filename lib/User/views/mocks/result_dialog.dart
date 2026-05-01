@@ -149,10 +149,17 @@ class ResultDialog extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       onPressed: () {
-                        final controller = Get.find<MockTestsController>();
-                        controller.fetchMockTests();
                         Get.back(); // close dialog
-                        Get.back(); // exit test
+
+                        /// delete only test controller
+                        Get.delete<StartTestController>(force: true);
+
+                        /// refresh mock test screen
+                        if (Get.isRegistered<MockTestsController>()) {
+                          Get.find<MockTestsController>().fetchMockTests();
+                        }
+
+                        Get.back(); // go back
                       },
                       child: Text(
                         'Exit',
