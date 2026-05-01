@@ -155,14 +155,7 @@ class QuestionsAdminPage extends StatelessWidget {
             onPressed: () async {
               Get.back();
 
-              Get.dialog(
-                const Center(child: CircularProgressIndicator()),
-                barrierDismissible: false,
-              );
-
               await ctrl.addBulkQuestions(jsonCtrl.text);
-
-              Get.back(); // close loader
             },
             child: const Text("Upload"),
           ),

@@ -21,157 +21,288 @@ class AdminMockTestPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 12 : 20,
-            vertical: 16,
-          ),
-          child: Obx(() {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// ================= HEADER =================
-                isMobile
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Mock Test Management",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            "Manage and organize your tests",
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: _primaryButton(
-                              title: "+ Add Test",
-                              onTap: ctrl.selectedCategory.value.isEmpty
-                                  ? null
-                                  : () => _showAddTestDialog(ctrl, context),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Column(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 12 : 20,
+                vertical: 16,
+              ),
+              child: Obx(() {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// ================= HEADER =================
+                    isMobile
+                        ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 "Mock Test Management",
                                 style: TextStyle(
-                                  fontSize: 22,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              SizedBox(height: 4),
-                              Text(
+                              const SizedBox(height: 6),
+                              const Text(
                                 "Manage and organize your tests",
                                 style: TextStyle(color: Colors.grey),
                               ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _primaryButton(
+                                        title: "+ Add Test",
+                                        onTap:
+                                            ctrl.selectedCategory.value.isEmpty
+                                            ? null
+                                            : () => _showAddTestDialog(
+                                                ctrl,
+                                                context,
+                                              ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: _primaryButton(
+                                        title: "Bulk Upload",
+                                        onTap:
+                                            ctrl.selectedCategory.value.isEmpty
+                                            ? null
+                                            : () => _bulkTestDialog(ctrl),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Mock Test Management",
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    "Manage and organize your tests",
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                              _primaryButton(
+                                title: "+ Add Test",
+                                onTap: ctrl.selectedCategory.value.isEmpty
+                                    ? null
+                                    : () => _showAddTestDialog(ctrl, context),
+                              ),
                             ],
                           ),
-                          _primaryButton(
-                            title: "+ Add Test",
-                            onTap: ctrl.selectedCategory.value.isEmpty
-                                ? null
-                                : () => _showAddTestDialog(ctrl, context),
-                          ),
-                        ],
+                    const SizedBox(height: 16),
+
+                    /// ================= CATEGORY =================
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: ctrl.selectedCategory.value.isEmpty
+                              ? null
+                              : ctrl.selectedCategory.value,
+                          hint: const Text("Select Category"),
+                          isExpanded: true,
+                          items: ctrl.categories
+                              .map(
+                                (c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)),
+                              )
+                              .toList(),
+                          onChanged: (v) {
+                            ctrl.selectedCategory.value = v ?? '';
+                          },
+                        ),
+                      ),
+                    ),
 
-                const SizedBox(height: 16),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: .end,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => _deleteAllTests(ctrl),
+                          icon: const Icon(
+                            Icons.delete_forever,
+                            color: Colors.red,
+                          ),
+                          label: const Text(
+                            "Delete All",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
 
-                /// ================= CATEGORY =================
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                    /// ================= LIST =================
+                    Expanded(
+                      child: ctrl.selectedCategory.value.isEmpty
+                          ? _empty("Please select category")
+                          : StreamBuilder(
+                              stream: FirebaseFirestore.instance
+                                  .collection('mock_tests')
+                                  .doc(ctrl.selectedCategory.value)
+                                  .collection('tests')
+                                  .orderBy('createdAt', descending: true)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+
+                                final docs = snapshot.data!.docs;
+
+                                if (docs.isEmpty) {
+                                  return _empty("No tests found");
+                                }
+
+                                return GridView.builder(
+                                  itemCount: docs.length,
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: crossAxisCount,
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 12,
+                                        childAspectRatio: isMobile ? 1.05 : 1.2,
+                                      ),
+                                  itemBuilder: (_, i) {
+                                    final data = docs[i].data();
+                                    return _testCard(
+                                      ctrl,
+                                      docs[i].id,
+                                      data,
+                                      context,
+                                      isMobile,
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                );
+              }),
+            ),
+          ),
+
+          /// LOADING OVERLAY
+          Obx(() {
+            if (!ctrl.isDeleting.value) return const SizedBox();
+
+            return Container(
+              color: Colors.black.withOpacity(0.4),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: ctrl.selectedCategory.value.isEmpty
-                          ? null
-                          : ctrl.selectedCategory.value,
-                      hint: const Text("Select Category"),
-                      isExpanded: true,
-                      items: ctrl.categories
-                          .map(
-                            (c) => DropdownMenuItem(value: c, child: Text(c)),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        ctrl.selectedCategory.value = v ?? '';
-                      },
+                  child: Obx(
+                    () => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 12),
+                        Text(
+                          ctrl.deleteMessage.value,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                /// ================= LIST =================
-                Expanded(
-                  child: ctrl.selectedCategory.value.isEmpty
-                      ? _empty("Please select category")
-                      : StreamBuilder(
-                          stream: FirebaseFirestore.instance
-                              .collection('mock_tests')
-                              .doc(ctrl.selectedCategory.value)
-                              .collection('tests')
-                              .orderBy('createdAt', descending: true)
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-
-                            final docs = snapshot.data!.docs;
-
-                            if (docs.isEmpty) {
-                              return _empty("No tests found");
-                            }
-
-                            return GridView.builder(
-                              itemCount: docs.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: crossAxisCount,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                    childAspectRatio: isMobile ? 1.05 : 1.2,
-                                  ),
-                              itemBuilder: (_, i) {
-                                final data = docs[i].data();
-                                return _testCard(
-                                  ctrl,
-                                  docs[i].id,
-                                  data,
-                                  context,
-                                  isMobile,
-                                );
-                              },
-                            );
-                          },
-                        ),
-                ),
-              ],
+              ),
             );
           }),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await ctrl.refreshAllData();
+        },
+        child: Icon(Icons.refresh),
+      ),
+    );
+  }
+
+  // ================= DELETE ALL TESTS =================
+  void _deleteAllTests(AdminMockTestController ctrl) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Delete All Tests"),
+        content: const Text("Are you sure?"),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              await ctrl.deleteAllMockTestsCollection();
+            },
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ================ BULK UPLOAD DIALOG =================
+  void _bulkTestDialog(AdminMockTestController ctrl) {
+    final jsonCtrl = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Bulk Upload Tests"),
+        content: SizedBox(
+          width: 400,
+          child: TextField(
+            controller: jsonCtrl,
+            maxLines: 15,
+            decoration: const InputDecoration(
+              hintText: "Paste JSON here...",
+              border: OutlineInputBorder(),
+            ),
+          ),
         ),
+        actions: [
+          ElevatedButton(
+            onPressed: () async {
+              Get.back(); // ✅ close first
+
+              await ctrl.addBulkCategoriesQuestions(jsonCtrl.text);
+
+              // close loader
+            },
+            child: const Text("Upload"),
+          ),
+        ],
       ),
     );
   }
@@ -223,7 +354,7 @@ class AdminMockTestPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "${data['questionsCount']} Questions • ${data['duration']} min",
+                  "${data['totalQuestions']} Questions • ${data['duration']} min",
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],

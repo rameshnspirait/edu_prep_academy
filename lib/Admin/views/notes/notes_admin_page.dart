@@ -19,161 +19,267 @@ class NotesAdminPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FC),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 12 : 24,
-            vertical: 16,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// ================= HEADER =================
-              isMobile
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Notes Management",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          "Manage your notes easily",
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            _primaryButton(
-                              "Category",
-                              Icons.category,
-                              () => _addCategoryDialog(ctrl, context),
-                            ),
-                            _primaryButton("Add Note", Icons.add, () {
-                              if (ctrl.selectedCategory.value.isEmpty) {
-                                Get.snackbar("Error", "Select category first");
-                                return;
-                              }
-                              _addNoteDialog(ctrl, context);
-                            }),
-                          ],
-                        ),
-                      ],
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Column(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 12 : 24,
+                vertical: 16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// ================= HEADER =================
+                  isMobile
+                      ? Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               "Notes Management",
                               style: TextStyle(
-                                fontSize: 22,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 4),
-                            Text(
-                              "Manage categories and notes",
+                            const SizedBox(height: 6),
+                            const Text(
+                              "Manage your notes easily",
                               style: TextStyle(color: Colors.grey),
                             ),
-                          ],
-                        ),
-                        Wrap(
-                          spacing: 10,
-                          children: [
-                            _primaryButton(
-                              "Add Category",
-                              Icons.category,
-                              () => _addCategoryDialog(ctrl, context),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: [
+                                // _primaryButton(
+                                //   "Category",
+                                //   Icons.category,
+                                //   () => _addCategoryDialog(ctrl, context),
+                                // ),
+                                _primaryButton("Add Note", Icons.add, () {
+                                  if (ctrl.selectedCategory.value.isEmpty) {
+                                    Get.snackbar(
+                                      "Error",
+                                      "Select category first",
+                                    );
+                                    return;
+                                  }
+                                  _addNoteDialog(ctrl, context);
+                                }),
+                                _primaryButton(
+                                  "Bulk Upload All",
+                                  Icons.cloud_upload,
+                                  () => _bulkAllDialog(ctrl),
+                                ),
+                                _primaryButton(
+                                  "Bulk Delete",
+                                  Icons.delete_forever,
+                                  () => _deleteAll(ctrl),
+                                ),
+                              ],
                             ),
-                            _primaryButton("Add Note", Icons.add, () {
-                              if (ctrl.selectedCategory.value.isEmpty) {
-                                Get.snackbar("Error", "Select category first");
-                                return;
-                              }
-                              _addNoteDialog(ctrl, context);
-                            }),
+                          ],
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Notes Management",
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  "Manage categories and notes",
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                            Wrap(
+                              spacing: 10,
+                              children: [
+                                // _primaryButton(
+                                //   "Add Category",
+                                //   Icons.category,
+                                //   () => _addCategoryDialog(ctrl, context),
+                                // ),
+                                _primaryButton("Add Note", Icons.add, () {
+                                  if (ctrl.selectedCategory.value.isEmpty) {
+                                    Get.snackbar(
+                                      "Error",
+                                      "Select category first",
+                                    );
+                                    return;
+                                  }
+                                  _addNoteDialog(ctrl, context);
+                                }),
+                              ],
+                            ),
                           ],
                         ),
-                      ],
+
+                  const SizedBox(height: 16),
+
+                  /// ================= DROPDOWN =================
+                  Obx(
+                    () => Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: ctrl.selectedCategory.value.isEmpty
+                              ? null
+                              : ctrl.selectedCategory.value,
+                          hint: const Text("Select Category"),
+                          isExpanded: true,
+                          items: ctrl.categories
+                              .map(
+                                (c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)),
+                              )
+                              .toList(),
+                          onChanged: (val) {
+                            ctrl.selectedCategory.value = val!;
+                            ctrl.loadNotes();
+                          },
+                        ),
+                      ),
                     ),
+                  ),
 
-              const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-              /// ================= DROPDOWN =================
-              Obx(
-                () => Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  /// ================= NOTES =================
+                  Expanded(
+                    child: Obx(() {
+                      if (ctrl.isLoading.value) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (ctrl.selectedCategory.value.isEmpty) {
+                        return _empty("Select category");
+                      }
+
+                      if (ctrl.notes.isEmpty) {
+                        return _empty("No notes available");
+                      }
+
+                      return GridView.builder(
+                        itemCount: ctrl.notes.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: isMobile ? 1.05 : 1.2,
+                        ),
+                        itemBuilder: (_, i) {
+                          final note = ctrl.notes[i];
+                          return _card(ctrl, note);
+                        },
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          /// LOADING OVERLAY
+          Obx(() {
+            if (!ctrl.isDeleting.value) return const SizedBox();
+
+            return Container(
+              color: Colors.black.withOpacity(0.4),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: ctrl.selectedCategory.value.isEmpty
-                          ? null
-                          : ctrl.selectedCategory.value,
-                      hint: const Text("Select Category"),
-                      isExpanded: true,
-                      items: ctrl.categories
-                          .map(
-                            (c) => DropdownMenuItem(value: c, child: Text(c)),
-                          )
-                          .toList(),
-                      onChanged: (val) {
-                        ctrl.selectedCategory.value = val!;
-                        ctrl.loadNotes();
-                      },
+                  child: Obx(
+                    () => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 12),
+                        Text(
+                          ctrl.deleteMessage.value,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
 
-              const SizedBox(height: 16),
+  //================== BULK CATEGORY DIALOG =================
+  void _bulkAllDialog(AdminNotesController ctrl) {
+    final jsonCtrl = TextEditingController();
 
-              /// ================= NOTES =================
-              Expanded(
-                child: Obx(() {
-                  if (ctrl.isLoading.value) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (ctrl.selectedCategory.value.isEmpty) {
-                    return _empty("Select category");
-                  }
-
-                  if (ctrl.notes.isEmpty) {
-                    return _empty("No notes available");
-                  }
-
-                  return GridView.builder(
-                    itemCount: ctrl.notes.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: isMobile ? 1.05 : 1.2,
-                    ),
-                    itemBuilder: (_, i) {
-                      final note = ctrl.notes[i];
-                      return _card(ctrl, note);
-                    },
-                  );
-                }),
-              ),
-            ],
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Bulk Upload (Category + Notes)"),
+        content: SizedBox(
+          width: 450,
+          child: TextField(
+            controller: jsonCtrl,
+            maxLines: 20,
+            decoration: const InputDecoration(
+              hintText: "Paste full JSON here...",
+              border: OutlineInputBorder(),
+            ),
           ),
         ),
+        actions: [
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              await ctrl.bulkUploadAll(jsonCtrl.text);
+            },
+            child: const Text("Upload"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  //==================BULK DELETE DIALOG=================
+  void _deleteAll(AdminNotesController ctrl) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Delete EVERYTHING"),
+        content: const Text(
+          "⚠️ This will delete ALL categories, notes, mock tests and questions.\n\nThis action cannot be undone!",
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Get.back();
+              await ctrl.deleteEverything();
+            },
+            child: const Text("Delete All"),
+          ),
+        ],
       ),
     );
   }
@@ -262,33 +368,33 @@ class NotesAdminPage extends StatelessWidget {
   }
 
   // ================= DIALOGS =================
-  void _addCategoryDialog(AdminNotesController ctrl, BuildContext context) {
-    final c = TextEditingController();
+  // void _addCategoryDialog(AdminNotesController ctrl, BuildContext context) {
+  //   final c = TextEditingController();
 
-    Get.dialog(
-      Dialog(
-        child: Container(
-          width: 350,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Create Category"),
-              TextField(controller: c),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  ctrl.createCategory(c.text);
-                  Get.back();
-                },
-                child: const Text("Create"),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  //   Get.dialog(
+  //     Dialog(
+  //       child: Container(
+  //         width: 350,
+  //         padding: const EdgeInsets.all(16),
+  //         child: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             const Text("Create Category"),
+  //             TextField(controller: c),
+  //             const SizedBox(height: 10),
+  //             ElevatedButton(
+  //               onPressed: () {
+  //                 ctrl.createCategory(c.text);
+  //                 Get.back();
+  //               },
+  //               child: const Text("Create"),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   void _addNoteDialog(AdminNotesController ctrl, BuildContext context) {
     final t = TextEditingController();
