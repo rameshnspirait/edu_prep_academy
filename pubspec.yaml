@@ -35,31 +35,32 @@ dependencies:
   firebase_app_check: ^0.4.1+4
   file_picker: ^11.0.2
   csv: ^6.0.0
-  # flutter_launcher_icons: ^0.14.4
-  # flutter_native_splash: ^2.4.7
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
 
-# flutter_icons:
-#   android: true
-#   ios: true
-#   image_path: "assets/images/logo.png"
-#   adaptive_icon_background: "white" # optional for Android adaptive icon
-#   adaptive_icon_foreground: "assets/images/logo.png"
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  adaptive_icon_background: "white" # optional for Android adaptive icon
+  adaptive_icon_foreground: "assets/images/logo.png"
 
-# flutter_native_splash:
-#   # Background color of the splash screen
-#   color: "#1E3A8A"
+flutter_native_splash:
+  color: "#1E3A8A" # main splash background
 
-#   # Your splash image/logo
-#   image: "assets/images/logo.png"
+  image: assets/images/logo.png
 
-#   # Platform options
-#   android: true
-#   ios: true
-#   web: false # optional
+  android: true
+  ios: true
+  web: false
 
-#   # How the image fits
-#   android_gravity: center # options: center, fill, top, bottom, start, end
-#   ios_content_mode: scaleAspectFit
+  android_gravity: center
+  ios_content_mode: center
+
+  # 🔥 IMPORTANT (Android 12+)
+  android_12:
+    image: assets/images/logo.png
+    icon_background_color: "#1E3A8A"
 
 dev_dependencies:
   flutter_test:

@@ -12,7 +12,7 @@ class AppRoutes {
   static const dashboard = '/dashboard';
   static const note = '/note';
   static const results = '/results';
-  static const videoClasses = '/videoClasses';
+  static const dailyQuiz = '/dailyQuiz';
   //Mock Test
   static const mockTest = '/mockTest';
   static const startTest = '/startTest';

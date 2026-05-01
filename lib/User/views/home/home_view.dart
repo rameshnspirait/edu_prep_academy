@@ -6,8 +6,8 @@ import 'package:edu_prep_academy/User/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class HomeTab extends StatelessWidget {
-  const HomeTab({super.key});
+class HomeView extends StatelessWidget {
+  const HomeView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +55,14 @@ class HomeTab extends StatelessWidget {
               ),
               children: [
                 _ActionCard(
+                  title: AppStrings.notes,
+                  subtitle: 'Quick Revision',
+                  icon: Icons.description_rounded,
+                  color: Colors.teal,
+                  onTap: () => Get.toNamed(AppRoutes.note),
+                ),
+
+                _ActionCard(
                   title: AppStrings.mockTests,
                   subtitle: 'Practice & Analyze',
                   icon: Icons.assignment_rounded,
@@ -62,19 +70,12 @@ class HomeTab extends StatelessWidget {
                   onTap: () => Get.toNamed(AppRoutes.mockTest),
                 ),
                 _ActionCard(
-                  title: AppStrings.notes,
-                  subtitle: 'Quick Revision',
-                  icon: Icons.description_rounded,
-                  color: Colors.teal,
-                  onTap: () => Get.toNamed(AppRoutes.note),
+                  title: "Daily Quiz",
+                  subtitle: '5 min Challenge',
+                  icon: Icons.bolt_rounded,
+                  color: Colors.orange,
+                  onTap: () => Get.toNamed(AppRoutes.dailyQuiz),
                 ),
-                // _ActionCard(
-                //   title: AppStrings.videoClasses,
-                //   subtitle: 'Concept Clarity',
-                //   icon: Icons.play_circle_fill_rounded,
-                //   color: Colors.orange,
-                //   onTap: () => Get.toNamed(AppRoutes.videoClasses),
-                // ),
                 _ActionCard(
                   title: AppStrings.results,
                   subtitle: 'Track Progress',
@@ -359,88 +360,6 @@ class _BannerSliderState extends State<_BannerSlider> {
     );
   }
 }
-
-/// ------------------------------------------------------------
-// /// PROGRESS CARD
-// /// ------------------------------------------------------------
-// class _ProgressCard extends StatelessWidget {
-//   final bool isDark;
-
-//   const _ProgressCard({required this.isDark});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.all(20),
-//       decoration: BoxDecoration(
-//         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-//         borderRadius: BorderRadius.circular(18),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(isDark ? 0.4 : 0.08),
-//             blurRadius: 14,
-//             offset: const Offset(0, 8),
-//           ),
-//         ],
-//       ),
-//       child:
-//       Row(
-//         children: [
-//           /// CIRCULAR PROGRESS
-//           SizedBox(
-//             height: 70,
-//             width: 70,
-//             child: Stack(
-//               fit: StackFit.expand,
-//               children: [
-//                 CircularProgressIndicator(
-//                   value: 0.65,
-//                   strokeWidth: 7,
-//                   backgroundColor: Colors.grey.shade300,
-//                   valueColor: const AlwaysStoppedAnimation(
-//                     AppColors.primaryBlue,
-//                   ),
-//                 ),
-//                 Center(
-//                   child: Text(
-//                     "65%",
-//                     style: AppTextStyles.bodyMedium(
-//                       context,
-//                     ).copyWith(fontWeight: FontWeight.bold),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-
-//           const SizedBox(width: 20),
-
-//           /// TEXT
-//           Expanded(
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 Text(
-//                   "Today's Progress",
-//                   style: AppTextStyles.bodyMedium(
-//                     context,
-//                   ).copyWith(fontWeight: FontWeight.w600),
-//                 ),
-//                 const SizedBox(height: 6),
-//                 Text(
-//                   "2 tests • 5 videos completed",
-//                   style: AppTextStyles.bodySmall(
-//                     context,
-//                   ).copyWith(color: isDark ? Colors.white60 : Colors.grey[600]),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
 
 /// ------------------------------------------------------------
 /// ACTION CARD

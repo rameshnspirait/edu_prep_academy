@@ -2,7 +2,7 @@ import 'package:edu_prep_academy/User/controllers/dashboard_controller.dart';
 import 'package:edu_prep_academy/User/controllers/mock_test_controller.dart';
 import 'package:edu_prep_academy/User/controllers/notes_controller.dart';
 import 'package:edu_prep_academy/User/controllers/profile_controller.dart';
-import 'package:edu_prep_academy/User/views/dashbaord/home_tab.dart';
+import 'package:edu_prep_academy/User/views/home/home_view.dart';
 import 'package:edu_prep_academy/User/views/profile/profile_view.dart';
 import 'package:edu_prep_academy/User/views/mocks/mock_tests_view.dart';
 import 'package:edu_prep_academy/User/views/notes/note_view.dart';
@@ -19,7 +19,7 @@ class DashboardView extends GetView<DashboardController> {
       body: Obx(() {
         switch (controller.currentIndex.value) {
           case 0:
-            return const HomeTab();
+            return const HomeView();
           case 1:
             Get.put(NotesController());
             return NotesView();
@@ -31,7 +31,7 @@ class DashboardView extends GetView<DashboardController> {
             Get.put(ProfileController());
             return const ProfileView();
           default:
-            return const HomeTab();
+            return const HomeView();
         }
       }),
       bottomNavigationBar: const CustomBottomNav(),
