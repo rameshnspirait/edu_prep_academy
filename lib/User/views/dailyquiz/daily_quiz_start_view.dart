@@ -6,8 +6,15 @@ import 'package:edu_prep_academy/User/controllers/start_test_controller.dart';
 
 class DailyQuizStartView extends StatelessWidget {
   final Map<String, dynamic> data;
+  final String quizId;
+  final String category;
 
-  const DailyQuizStartView({super.key, required this.data});
+  const DailyQuizStartView({
+    super.key,
+    required this.data,
+    required this.quizId,
+    required this.category,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +92,7 @@ class DailyQuizStartView extends StatelessWidget {
                     children: [
                       _infoTile(
                         Icons.help_outline,
-                        "${data['questions']} Questions",
+                        "${data['totalQuestions']} Questions",
                       ),
                       _infoTile(
                         Icons.timer_outlined,
@@ -147,7 +154,12 @@ class DailyQuizStartView extends StatelessWidget {
                     binding: BindingsBuilder(() {
                       Get.put(StartTestController());
                     }),
-                    arguments: {'isDailyQuiz': true, 'quizData': data},
+                    arguments: {
+                      'isDailyQuiz': true,
+                      'quizData': data,
+                      'quizId': quizId,
+                      'category': category,
+                    },
                   );
                 },
                 child: const Text(

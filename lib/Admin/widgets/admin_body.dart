@@ -1,3 +1,4 @@
+import 'package:edu_prep_academy/Admin/views/dailyquiz/daily_quiz_admin_page.dart';
 import 'package:edu_prep_academy/Admin/views/dashboard/admin_dashboard_page.dart';
 import 'package:edu_prep_academy/Admin/views/mock/mock_test_admin_page.dart';
 import 'package:edu_prep_academy/Admin/views/notes/notes_admin_page.dart';
@@ -26,6 +27,9 @@ class AdminBody extends StatelessWidget {
             break;
           case 2:
             page = const AdminMockTestPage();
+            break;
+          case 3:
+            page = const AdminDailyQuizPage();
             break;
           default:
             page = const AdminDashboard();

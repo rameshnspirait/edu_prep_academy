@@ -47,7 +47,7 @@ class StartTestController extends GetxController {
       quizData = args['quizData'];
       duration = quizData?['time'] ?? 10;
 
-      _initializeDailyQuiz();
+      _initializeDailyQuiz(args['category'], args['quizId']);
     } else {
       /// ===== MOCK TEST =====
       if (!args.containsKey('testId') ||
@@ -65,8 +65,12 @@ class StartTestController extends GetxController {
     }
   }
 
+  String formatCategoryId(String name) {
+    return name.trim().replaceAll("/", "-").replaceAll(" ", "_");
+  }
+
   /// ================= DAILY QUIZ =================
-  void _initializeDailyQuiz() {
+  void _initializeDailyQuiz(String? categoryId, String? quizId) {
     _timer?.cancel();
 
     selectedAnswers.clear();
@@ -76,28 +80,39 @@ class StartTestController extends GetxController {
 
     timeLeft.value = duration * 60;
 
-    _loadDailyQuiz();
+    _loadDailyQuiz(category: categoryId ?? '', quizId: quizId ?? '');
   }
 
-  Future<void> _loadDailyQuiz() async {
+  Future<void> _loadDailyQuiz({
+    required String category,
+    required String quizId,
+  }) async {
     try {
       isLoading.value = true;
 
-      ///  TEMP DATA (replace with Firebase later)
-      questions.value = [
-        {
-          'question': "Today's GK Question?",
-          'options': ["A", "B", "C", "D"],
-          'correctIndex': 1,
-          'marks': 1,
-        },
-        {
-          'question': "Math Quick Question?",
-          'options': ["10", "20", "30", "40"],
-          'correctIndex': 2,
-          'marks': 1,
-        },
-      ];
+      final snapshot = await _firestore
+          .collection('daily_quizzes')
+          .doc(formatCategoryId(category)) // ✅ FIXED
+          .collection('quizzes')
+          .doc(quizId)
+          .collection('questions')
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        debugPrint("❌ No questions found");
+        return;
+      }
+
+      questions.value = snapshot.docs.map((doc) {
+        final data = doc.data();
+
+        return {
+          'question': data['question'] ?? '',
+          'options': List<String>.from(data['options'] ?? []),
+          'correctIndex': data['correctIndex'] ?? 0,
+          'marks': data['marks'] ?? 1,
+        };
+      }).toList();
 
       _startTimer();
     } catch (e) {
