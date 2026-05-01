@@ -71,7 +71,7 @@ class HomeView extends StatelessWidget {
                 ),
                 _ActionCard(
                   title: "Daily Quiz",
-                  subtitle: '5 min Challenge',
+                  subtitle: 'Quick Daily Test',
                   icon: Icons.bolt_rounded,
                   color: Colors.orange,
                   onTap: () => Get.toNamed(AppRoutes.dailyQuiz),

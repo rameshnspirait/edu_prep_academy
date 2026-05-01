@@ -409,7 +409,7 @@ Widget _chip(String text) {
 class _MockShimmer extends StatelessWidget {
   final bool isDark;
 
-  const _MockShimmer({super.key, required this.isDark});
+  const _MockShimmer({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
