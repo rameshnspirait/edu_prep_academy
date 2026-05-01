@@ -42,12 +42,12 @@ class MockTestsView extends GetView<MockTestsController> {
             controller: controller.scrollController, // ✅ ADDED
             padding: const EdgeInsets.all(16),
 
-            /// ✅ ADD LOADER COUNT
+            /// ✅ UPDATED FOR PAGINATION
             itemCount:
                 categories.length + (controller.isLoadingMore.value ? 1 : 0),
 
             itemBuilder: (context, index) {
-              /// ✅ BOTTOM LOADER (NO UI CHANGE)
+              /// ✅ BOTTOM LOADER (ONLY ADDITION)
               if (index >= categories.length) {
                 return const Padding(
                   padding: EdgeInsets.all(16),
@@ -104,6 +104,7 @@ class MockTestsView extends GetView<MockTestsController> {
                         isLocked: test["isLocked"] ?? false,
                         uploadedAt: _safeDate(test["createdAt"]),
 
+                        /// 🔥 IMPORTANT FIX
                         onTap: () {
                           Get.toNamed(
                             AppRoutes.startTest,
@@ -146,7 +147,7 @@ class MockTestsView extends GetView<MockTestsController> {
 }
 
 //////////////////////////////////////////////////////////////////
-// TEST CARD (UNCHANGED)
+// TEST CARD (UNCHANGED UI)
 //////////////////////////////////////////////////////////////////
 
 class _TestCard extends StatelessWidget {
@@ -226,6 +227,13 @@ class _TestCard extends StatelessWidget {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? primaryColor : Colors.blueAccent,
+                    foregroundColor: isDark ? Colors.black87 : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   onPressed: () => Navigator.pop(context),
                   child: const Text("Got it"),
                 ),
@@ -283,6 +291,40 @@ class _TestCard extends StatelessWidget {
                             : thumbnailUrl,
                         fit: BoxFit.cover,
                       ),
+
+                      /// FREE / PAID
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isFree ? Colors.green : Colors.orange,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            isFree ? "FREE" : "PAID",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      /// ✅ USE questionText HERE (FIX)
+                      Positioned(top: 8, right: 8, child: _chip(questionText)),
+
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: _chip("$duration min"),
+                      ),
+
                       if (isLocked)
                         Container(
                           color: Colors.black.withOpacity(0.5),
@@ -304,20 +346,12 @@ class _TestCard extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   "Uploaded: ${uploadedAt.day}/${uploadedAt.month}/${uploadedAt.year}",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? Colors.white60 : Colors.grey,
-                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -327,13 +361,17 @@ class _TestCard extends StatelessWidget {
                   width: double.infinity,
                   height: 38,
                   child: ElevatedButton(
-                    onPressed: isLocked ? null : onTap,
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: AppColors.darkTextPrimary,
+                      foregroundColor: isLocked
+                          ? Colors.black54
+                          : isDark
+                          ? Colors.white
+                          : Colors.white,
                       backgroundColor: isLocked
                           ? Colors.grey
-                          : Colors.blueAccent,
+                          : AppColors.primaryBlue,
                     ),
+                    onPressed: isLocked ? null : onTap,
                     child: Text(isLocked ? "Locked" : "Start Test"),
                   ),
                 ),
@@ -346,41 +384,103 @@ class _TestCard extends StatelessWidget {
   }
 }
 
+Widget _chip(String text) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: Colors.black.withOpacity(0.6),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Text(
+      text,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  );
+}
+
 //////////////////////////////////////////////////////////////////
 // SHIMMER (UNCHANGED)
 //////////////////////////////////////////////////////////////////
 
 class _MockShimmer extends StatelessWidget {
   final bool isDark;
-  const _MockShimmer({required this.isDark});
+
+  const _MockShimmer({super.key, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     final base = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
     final highlight = isDark ? Colors.grey.shade700 : Colors.grey.shade100;
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 6,
-      physics: const BouncingScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.75,
-      ),
-      itemBuilder: (_, __) {
-        return Shimmer.fromColors(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      child: SizedBox(
+        child: Shimmer.fromColors(
           baseColor: base,
           highlightColor: highlight,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey,
-              borderRadius: BorderRadius.circular(16),
+          direction: ShimmerDirection.ltr,
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 20, // 👈 2 cards shimmer
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.85,
             ),
+            itemBuilder: (_, __) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// IMAGE
+                    Container(
+                      height: 80,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    /// TITLE
+                    Container(
+                      height: 12,
+                      width: double.infinity,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 6),
+                    Container(height: 12, width: 100, color: Colors.white),
+
+                    const Spacer(),
+
+                    /// BUTTON
+                    Container(
+                      height: 30,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

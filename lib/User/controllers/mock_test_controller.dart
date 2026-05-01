@@ -91,7 +91,7 @@ class MockTestsController extends GetxController {
             'thumbnail': data['thumbnail'] ?? '',
             'duration': data['duration'] ?? 0,
             'isFree': data['isFree'] ?? true,
-            'questions': data['questionsCount'] ?? 0,
+            'questions': data['totalQuestions'] ?? 0,
             'createdAt': data['createdAt'] ?? Timestamp.now(),
             'isLocked': attemptData['isLocked'],
             'lockMessage': attemptData['message'],
