@@ -10,6 +10,7 @@ import 'package:edu_prep_academy/User/bindings/start_test_binding.dart';
 import 'package:edu_prep_academy/User/views/auth/login_view.dart';
 import 'package:edu_prep_academy/User/views/dailyquiz/daily_quiz_view.dart';
 import 'package:edu_prep_academy/User/views/dashbaord/dashboard_view.dart';
+import 'package:edu_prep_academy/User/views/profile/performance_view.dart';
 import 'package:edu_prep_academy/User/views/profile/profile_view.dart';
 import 'package:edu_prep_academy/User/views/mocks/mock_tests_view.dart';
 import 'package:edu_prep_academy/User/views/mocks/start_test_view.dart';
@@ -63,6 +64,11 @@ class AppPages {
       name: AppRoutes.profile,
       page: () => ProfileView(),
       binding: ProfileBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.performance,
+      page: () => PerformanceView(),
       transition: Transition.fadeIn,
     ),
     GetPage(

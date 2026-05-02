@@ -271,6 +271,7 @@ class StartTestController extends GetxController {
     /// 🔥 SAVE ONLY FOR MOCK TEST
     if (!isDailyQuiz) {
       await _saveAttempt(correct, score, autoSubmit);
+      await _updateUserStats();
     }
   }
 
@@ -290,20 +291,71 @@ class StartTestController extends GetxController {
 
     final int attempts = (data['attemptCount'] ?? 0) + 1;
 
+    final int totalQuestions = questions.length;
+    final int wrong = totalQuestions - correct;
+
+    ///  Accuracy Calculation
+    final double accuracy = totalQuestions == 0
+        ? 0
+        : (correct / totalQuestions) * 100;
+
     await ref.set({
       'testId': testId,
       'attemptCount': attempts,
-      'lastScore': score,
+
+      ///  CORE STATS
+      'lastScore': score, // percentage
+      'lastAccuracy': accuracy,
       'correct': correct,
+      'wrong': wrong,
+      'totalQuestions': totalQuestions,
+
+      /// 🔥 OPTIONAL (FUTURE FEATURES)
+      'timeTaken': (duration * 60) - timeLeft.value,
       'autoSubmitted': autoSubmit,
+
+      /// 🔥 TIMESTAMP
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    /// 🔥 UPDATE LOCAL STATE
+    /// 🔄 UPDATE LOCAL STATE
     attemptCount.value = attempts;
 
     if (attempts >= maxAttempts) {
       isAttemptLimitReached.value = true;
+    }
+  }
+
+  Future<void> _updateUserStats() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      /// 🔥 GET ALL ATTEMPTS
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('mock_attempts')
+          .get();
+
+      int totalTests = snapshot.docs.length;
+
+      double totalAccuracy = 0;
+
+      for (var doc in snapshot.docs) {
+        totalAccuracy += (doc.data()['lastAccuracy'] ?? 0).toDouble();
+      }
+
+      double avgAccuracy = totalTests == 0 ? 0 : (totalAccuracy / totalTests);
+
+      /// 🔥 UPDATE USERS COLLECTION
+      await _firestore.collection('users').doc(user.uid).set({
+        'avgAccuracy': avgAccuracy,
+        'totalTests': totalTests,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print("User stats error: $e");
     }
   }
 

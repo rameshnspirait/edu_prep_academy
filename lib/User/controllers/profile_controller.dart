@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
@@ -18,19 +17,19 @@ class ProfileController extends GetxController {
   RxDouble accuracy = 0.0.obs;
   RxInt rankPercent = 0.obs;
 
-  /// 🔥 STREAM SUBSCRIPTION (REAL-TIME)
+  ///  STREAM SUBSCRIPTION (REAL-TIME)
   StreamSubscription? _attemptsSub;
 
   @override
   void onInit() {
     super.onInit();
     fetchUserProfile();
-    listenMockAttempts(); // 🔥 real-time updates
+    listenMockAttempts(); //  real-time updates
   }
 
   @override
   void onClose() {
-    _attemptsSub?.cancel(); // ✅ prevent memory leak
+    _attemptsSub?.cancel(); //  prevent memory leak
     super.onClose();
   }
 
@@ -51,7 +50,6 @@ class ProfileController extends GetxController {
       /// OPTIONAL STATIC RANK (can be dynamic later)
       rankPercent.value = 12;
     } catch (e) {
-      print("Profile error: $e");
     } finally {
       isLoading.value = false;
     }

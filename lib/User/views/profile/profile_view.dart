@@ -128,7 +128,7 @@ class ProfileView extends GetView<ProfileController> {
                       icon: Icons.analytics_outlined,
                       title: "My Performance",
                       subtitle: "Score, accuracy & rank",
-                      // onTap: () => Get.toNamed(AppRoutes.performance),
+                      onTap: () => Get.toNamed(AppRoutes.performance),
                     ),
                     _ProfileOptionCard(
                       icon: Icons.assignment_turned_in_outlined,
