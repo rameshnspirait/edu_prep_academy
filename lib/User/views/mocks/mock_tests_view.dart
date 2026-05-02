@@ -30,7 +30,10 @@ class MockTestsView extends GetView<MockTestsController> {
         }
 
         if (controller.categoryTests.isEmpty) {
-          return const Center(child: Text("No mock tests available"));
+          return _EmptyMockState(
+            isDark: isDark,
+            onRetry: controller.fetchMockTests,
+          );
         }
 
         final categories = controller.categoryTests.keys.toList();
@@ -42,12 +45,12 @@ class MockTestsView extends GetView<MockTestsController> {
             controller: controller.scrollController, // ✅ ADDED
             padding: const EdgeInsets.all(16),
 
-            /// ✅ UPDATED FOR PAGINATION
+            ///  UPDATED FOR PAGINATION
             itemCount:
                 categories.length + (controller.isLoadingMore.value ? 1 : 0),
 
             itemBuilder: (context, index) {
-              /// ✅ BOTTOM LOADER (ONLY ADDITION)
+              ///  BOTTOM LOADER (ONLY ADDITION)
               if (index >= categories.length) {
                 return const Padding(
                   padding: EdgeInsets.all(16),
@@ -143,6 +146,72 @@ class MockTestsView extends GetView<MockTestsController> {
     } catch (_) {
       return DateTime.now();
     }
+  }
+}
+
+class _EmptyMockState extends StatelessWidget {
+  final bool isDark;
+  final VoidCallback onRetry;
+
+  const _EmptyMockState({required this.isDark, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white60 : Colors.black54;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            /// ICON
+            Icon(Icons.quiz_outlined, size: 80, color: subTextColor),
+
+            const SizedBox(height: 20),
+
+            /// TITLE
+            Text(
+              "No Mock Tests Available",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            /// SUBTITLE
+            Text(
+              "New tests will appear here once added.\nStay tuned and keep practicing!",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: subTextColor, height: 1.5),
+            ),
+
+            const SizedBox(height: 20),
+
+            /// RETRY BUTTON
+            SizedBox(
+              height: 42,
+              child: OutlinedButton(
+                onPressed: onRetry,
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: isDark ? Colors.white30 : Colors.black26,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text("Refresh"),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -405,7 +474,6 @@ Widget _chip(String text) {
 //////////////////////////////////////////////////////////////////
 // SHIMMER (UNCHANGED)
 //////////////////////////////////////////////////////////////////
-
 class _MockShimmer extends StatelessWidget {
   final bool isDark;
 

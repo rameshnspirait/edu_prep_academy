@@ -24,7 +24,7 @@ class ProfileView extends GetView<ProfileController> {
       appBar: AppBar(
         title: const Text("Profile"),
         centerTitle: true,
-        elevation: 6,
+        elevation: 4,
       ),
       body: Obx(
         () => controller.isLoading.value
@@ -37,32 +37,31 @@ class ProfileView extends GetView<ProfileController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// ================= PROFILE HEADER =================
+                    /// ================= HEADER =================
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
                             AppColors.primaryBlue,
                             AppColors.primaryBlue.withOpacity(0.85),
                           ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(22),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.25),
-                            blurRadius: 14,
+                            blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),
                         ],
                       ),
                       child: Column(
                         children: [
+                          /// Avatar
                           CircleAvatar(
-                            radius: 44,
+                            radius: 42,
                             backgroundColor: Colors.white,
                             child: Text(
                               user?.phoneNumber
@@ -70,49 +69,51 @@ class ProfileView extends GetView<ProfileController> {
                                       .substring(0, 1) ??
                                   "U",
                               style: const TextStyle(
-                                fontSize: 34,
+                                fontSize: 30,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primaryBlue,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 14),
+
+                          const SizedBox(height: 12),
+
+                          /// Phone
                           Text(
                             user?.phoneNumber ?? AppStrings.defaultUser,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
+
                           const SizedBox(height: 6),
+
                           const Text(
                             "Preparing for Competitive Exams",
                             style: TextStyle(
                               color: Colors.white70,
-                              fontSize: 13,
+                              fontSize: 12,
                             ),
                           ),
-                          const SizedBox(height: 14),
 
-                          /// QUICK STATS
+                          const SizedBox(height: 16),
+
+                          /// STATS
                           Obx(
                             () => Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                _ProfileStat(
-                                  title: "Tests",
-                                  value: "${controller.totalTests.value}",
+                                _stat(
+                                  "Tests",
+                                  "${controller.totalTests.value}",
                                 ),
-                                _ProfileStat(
-                                  title: "Accuracy",
-                                  value:
-                                      "${controller.accuracy.value.toStringAsFixed(1)}%",
+                                _stat(
+                                  "Accuracy",
+                                  "${controller.accuracy.value.toStringAsFixed(1)}%",
                                 ),
-                                _ProfileStat(
-                                  title: "Rank",
-                                  value: "Top ${controller.rankPercent.value}%",
-                                ),
+                                _rankBadge(controller.userRank.value),
                               ],
                             ),
                           ),
@@ -120,27 +121,27 @@ class ProfileView extends GetView<ProfileController> {
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 28),
 
-                    /// ================= LEARNING SECTION =================
-                    _SectionTitle("Learning & Performance"),
-                    _ProfileOptionCard(
+                    /// ================= LEARNING =================
+                    _section("Learning & Performance"),
+                    _card(
                       icon: Icons.analytics_outlined,
                       title: "My Performance",
                       subtitle: "Score, accuracy & rank",
                       onTap: () => Get.toNamed(AppRoutes.performance),
                     ),
-                    _ProfileOptionCard(
+                    _card(
                       icon: Icons.assignment_turned_in_outlined,
                       title: "My Test Attempts",
                       subtitle: "Previous mock results",
                     ),
-                    _ProfileOptionCard(
+                    _card(
                       icon: Icons.picture_as_pdf_outlined,
                       title: "Downloaded Notes",
                       subtitle: "Offline PDFs",
                     ),
-                    _ProfileOptionCard(
+                    _card(
                       icon: Icons.bookmark_border,
                       title: "Saved Questions",
                       subtitle: "Revise later",
@@ -148,18 +149,18 @@ class ProfileView extends GetView<ProfileController> {
 
                     const SizedBox(height: 24),
 
-                    /// ================= ACCOUNT SECTION =================
-                    _SectionTitle("Account & Preferences"),
-                    _ProfileOptionCard(
+                    /// ================= SETTINGS =================
+                    _section("Account & Preferences"),
+                    _card(
                       icon: Icons.school_outlined,
                       title: "Exam Preferences",
                       subtitle: "SSC, Banking, UPSC, CAT",
                     ),
-                    _ProfileOptionCard(
+                    _card(
                       icon: Icons.dark_mode_rounded,
                       title: AppStrings.darkMode,
                       subtitle: "Light / Dark theme",
-                      trailingWidget: Obx(
+                      trailing: Obx(
                         () => Switch(
                           value: themeCtrl.isDarkMode.value,
                           onChanged: themeCtrl.toggleTheme,
@@ -167,8 +168,8 @@ class ProfileView extends GetView<ProfileController> {
                         ),
                       ),
                     ),
-                    _ProfileOptionCard(
-                      icon: Icons.settings_rounded,
+                    _card(
+                      icon: Icons.settings,
                       title: "App Settings",
                       subtitle: "Notifications & permissions",
                       onTap: () => Get.toNamed(AppRoutes.settings),
@@ -176,21 +177,21 @@ class ProfileView extends GetView<ProfileController> {
 
                     const SizedBox(height: 24),
 
-                    /// ================= SUPPORT SECTION =================
-                    _SectionTitle("Support"),
-                    _ProfileOptionCard(
-                      icon: Icons.help_outline_rounded,
+                    /// ================= SUPPORT =================
+                    _section("Support"),
+                    _card(
+                      icon: Icons.help_outline,
                       title: "Help & Support",
                       subtitle: "FAQs & contact",
                       onTap: () => Get.toNamed(AppRoutes.helpSupport),
                     ),
-                    _ProfileOptionCard(
+                    _card(
                       icon: Icons.feedback_outlined,
                       title: "Feedback",
                       subtitle: "Help us improve",
                       onTap: () => Get.toNamed(AppRoutes.feedback),
                     ),
-                    _ProfileOptionCard(
+                    _card(
                       icon: Icons.share_outlined,
                       title: "Share App",
                       subtitle: "Invite friends",
@@ -199,7 +200,7 @@ class ProfileView extends GetView<ProfileController> {
                     const SizedBox(height: 24),
 
                     /// ================= LOGOUT =================
-                    _ProfileOptionCard(
+                    _card(
                       icon: Icons.logout,
                       title: AppStrings.logout,
                       subtitle: "Sign out of account",
@@ -207,12 +208,12 @@ class ProfileView extends GetView<ProfileController> {
                       onTap: () async => await authCtrl.logout(),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 30),
 
                     Center(
                       child: Text(
                         AppStrings.appVersion,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        style: TextStyle(
                           color: isDark ? Colors.grey[500] : Colors.grey[600],
                         ),
                       ),
@@ -225,137 +226,161 @@ class ProfileView extends GetView<ProfileController> {
   }
 }
 
-/// ================= SECTION TITLE =================
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  const _SectionTitle(this.title);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+/// ================= STAT =================
+Widget _stat(String title, String value) {
+  return Column(
+    children: [
+      Text(
+        value,
+        style: const TextStyle(
+          color: Colors.white,
           fontWeight: FontWeight.bold,
-          color: Colors.grey,
+          fontSize: 16,
         ),
       ),
-    );
-  }
+      Text(title, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+    ],
+  );
 }
 
-/// ================= PROFILE STAT =================
-class _ProfileStat extends StatelessWidget {
-  final String title;
-  final String value;
-  const _ProfileStat({required this.title, required this.value});
+/// ================= PREMIUM RANK BADGE =================
+Widget _rankBadge(int rank) {
+  String medal;
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        Text(
-          title,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
-        ),
-      ],
-    );
+  if (rank == 1) {
+    medal = "🥇";
+  } else if (rank == 2) {
+    medal = "🥈";
+  } else if (rank == 3) {
+    medal = "🥉";
+  } else {
+    medal = "🏅";
   }
+
+  return Column(
+    children: [
+      /// Top Row (Medal + Rank)
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(medal, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 6),
+          Text(
+            "Rank $rank",
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              color: Colors.white,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
+      ),
+
+      const SizedBox(height: 2),
+
+      /// Subtitle
+      const Text(
+        "in Tests",
+        style: TextStyle(
+          fontSize: 11,
+          color: Colors.white70,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+    ],
+  );
 }
 
-/// ================= OPTION CARD =================
-class _ProfileOptionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final Color? iconColor;
-  final VoidCallback? onTap;
-  final Widget? trailingWidget;
+/// ================= SECTION =================
+Widget _section(String title) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(
+      title,
+      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+    ),
+  );
+}
 
-  const _ProfileOptionCard({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.iconColor,
-    this.onTap,
-    this.trailingWidget,
-  });
+/// ================= CARD =================
+Widget _card({
+  required IconData icon,
+  required String title,
+  String? subtitle,
+  Color? iconColor,
+  VoidCallback? onTap,
+  Widget? trailing,
+}) {
+  return Builder(
+    builder: (context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withOpacity(0.35)
-                    : Colors.grey.withOpacity(0.12),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: (iconColor ?? AppColors.primaryBlue).withOpacity(0.12),
-                  shape: BoxShape.circle,
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withOpacity(0.4)
+                      : Colors.grey.withOpacity(0.12),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor ?? AppColors.primaryBlue,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (iconColor ?? AppColors.primaryBlue).withOpacity(
+                      0.12,
                     ),
-                    if (subtitle != null)
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: iconColor ?? AppColors.primaryBlue,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        subtitle!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey,
-                          fontSize: 12,
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
                         ),
                       ),
-                  ],
+                      if (subtitle != null)
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              if (trailingWidget != null) trailingWidget!,
-            ],
+                if (trailing != null) trailing,
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
 }

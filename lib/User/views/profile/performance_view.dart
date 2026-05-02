@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/profile_controller.dart';
@@ -70,6 +71,7 @@ class PerformanceView extends GetView<ProfileController> {
             "Overall Accuracy",
             style: TextStyle(color: Colors.white70),
           ),
+
           const SizedBox(height: 6),
 
           Obx(
@@ -83,14 +85,48 @@ class PerformanceView extends GetView<ProfileController> {
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
 
-          Obx(
-            () => Text(
-              "Top ${controller.rankPercent.value}% Rank",
-              style: const TextStyle(color: Colors.white70),
-            ),
-          ),
+          /// 🔥 RANK (UPDATED)
+          Obx(() {
+            final rank = controller.userRank.value;
+
+            String medal;
+            if (rank == 1) {
+              medal = "🥇";
+            } else if (rank == 2) {
+              medal = "🥈";
+            } else if (rank == 3) {
+              medal = "🥉";
+            } else {
+              medal = "🏅";
+            }
+
+            return Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(medal, style: const TextStyle(fontSize: 16)),
+                    const SizedBox(width: 6),
+                    Text(
+                      "Rank $rank",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  "in Tests",
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            );
+          }),
         ],
       ),
     );
@@ -118,13 +154,13 @@ class PerformanceView extends GetView<ProfileController> {
           "${controller.accuracy.value.toStringAsFixed(1)}%",
           isDark,
         ),
+        _statTile(context, "Rank", "Rank ${controller.userRank.value}", isDark),
         _statTile(
           context,
-          "Rank",
-          "Top ${controller.rankPercent.value}%",
+          "Best Score",
+          "${controller.bestScore.value}%",
           isDark,
         ),
-        _statTile(context, "Best Score", "85%", isDark), // TODO dynamic
       ],
     );
   }
@@ -187,65 +223,111 @@ class PerformanceView extends GetView<ProfileController> {
         ),
         const SizedBox(height: 10),
 
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 5,
-          itemBuilder: (_, i) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark
-                        ? Colors.black.withOpacity(0.35)
-                        : Colors.grey.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  /// ICON
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.analytics_outlined,
-                      color: AppColors.primaryBlue,
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  /// TITLE
-                  const Expanded(
-                    child: Text(
-                      "Mock Test 1",
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-
-                  /// SCORE
-                  const Text(
-                    "78%",
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+        Obx(() {
+          if (controller.recentTests.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text("No tests attempted yet"),
               ),
             );
-          },
-        ),
+          }
+
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: controller.recentTests.length,
+            itemBuilder: (_, i) {
+              final test = controller.recentTests[i];
+
+              final score = test['score'] ?? 0;
+
+              /// 🎯 Dynamic color based on performance
+              Color scoreColor;
+              if (score >= 80) {
+                scoreColor = Colors.green;
+              } else if (score >= 50) {
+                scoreColor = Colors.orange;
+              } else {
+                scoreColor = Colors.red;
+              }
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark
+                          ? Colors.black.withOpacity(0.35)
+                          : Colors.grey.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    /// ICON
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryBlue.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.analytics_outlined,
+                        color: AppColors.primaryBlue,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    /// TITLE + DATE
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            test['title'] ?? "Mock Test",
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+
+                          /// Optional Date
+                          Text(
+                            test['date'] != null
+                                ? (test['date'] as Timestamp)
+                                      .toDate()
+                                      .toString()
+                                      .substring(0, 10)
+                                : "",
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    /// SCORE
+                    Text(
+                      "$score%",
+                      style: TextStyle(
+                        color: scoreColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        }),
       ],
     );
   }

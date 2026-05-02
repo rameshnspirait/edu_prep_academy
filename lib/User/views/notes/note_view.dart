@@ -9,7 +9,7 @@ import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 
 class NotesView extends GetView<NotesController> {
-  NotesView({super.key});
+  const NotesView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +33,16 @@ class NotesView extends GetView<NotesController> {
           return const _NotesShimmer();
         }
 
+        /// 🔥 EMPTY STATE
+        if (controller.subjectNotes.isEmpty) {
+          return _EmptyNotesState();
+        }
+
         return NotificationListener<ScrollNotification>(
           onNotification: (notification) {
             if (notification.metrics.pixels >=
                 notification.metrics.maxScrollExtent - 300) {
-              controller.loadMore(); // ✅ SAFE
+              controller.loadMore();
             }
             return false;
           },
@@ -71,7 +76,8 @@ class NotesView extends GetView<NotesController> {
                         final note = entry.value[index];
                         return _NoteCard(
                           note: note,
-                          isDark: isDark,
+                          isDark:
+                              Theme.of(context).brightness == Brightness.dark,
                           onTap: () {
                             Get.to(
                               () => NoteDetailView(note: note),
@@ -107,6 +113,69 @@ class NotesView extends GetView<NotesController> {
           ),
         );
       }),
+    );
+  }
+}
+
+class _EmptyNotesState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            /// ICON
+            Icon(
+              Icons.menu_book_rounded,
+              size: 70,
+              color: isDark ? Colors.grey[600] : Colors.grey[400],
+            ),
+
+            const SizedBox(height: 16),
+
+            /// TITLE
+            Text(
+              "No Notes Available",
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 8),
+
+            /// SUBTITLE
+            Text(
+              "Notes will appear here once they are added.\nStay tuned and keep learning!",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+            ),
+
+            const SizedBox(height: 20),
+
+            /// OPTIONAL REFRESH BUTTON
+            SizedBox(
+              height: 42,
+              child: OutlinedButton(
+                onPressed: () =>
+                    Get.find<NotesController>().fetchInitialNotes(),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: isDark ? Colors.white30 : Colors.black26,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text("Refresh"),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

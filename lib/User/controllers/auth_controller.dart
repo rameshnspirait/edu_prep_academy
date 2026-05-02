@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edu_prep_academy/User/controllers/dashboard_controller.dart';
+import 'package:edu_prep_academy/User/controllers/profile_controller.dart';
+import 'package:edu_prep_academy/User/controllers/start_test_controller.dart';
 import 'package:edu_prep_academy/User/core/constants/app_colors.dart';
 import 'package:edu_prep_academy/User/routes/app_routes.dart';
 import 'package:edu_prep_academy/User/widgets/custom_alert_dialog.dart';
@@ -313,6 +315,9 @@ class AuthController extends GetxController with SingleGetTickerProviderMixin {
     if (Get.isRegistered<DashboardController>()) {
       Get.delete<DashboardController>(force: true);
     }
+
+    Get.delete<ProfileController>(force: true);
+    Get.delete<StartTestController>(force: true);
 
     await _auth.signOut();
     resetAuthFields();

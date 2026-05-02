@@ -3,6 +3,7 @@ import 'package:edu_prep_academy/User/controllers/daily_quiz_controller.dart';
 import 'package:edu_prep_academy/User/views/dailyquiz/daily_quiz_start_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DailyQuizView extends StatelessWidget {
   DailyQuizView({super.key});
@@ -27,7 +28,7 @@ class DailyQuizView extends StatelessWidget {
         children: [
           const SizedBox(height: 10),
 
-          ///  CATEGORY HEADER
+          /// CATEGORY HEADER
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
@@ -41,10 +42,7 @@ class DailyQuizView extends StatelessWidget {
           /// ================= CATEGORY =================
           Obx(() {
             if (ctrl.categories.isEmpty) {
-              return const SizedBox(
-                height: 60,
-                child: Center(child: CircularProgressIndicator()),
-              );
+              return _categoryShimmer(isDark);
             }
 
             return SizedBox(
@@ -83,11 +81,6 @@ class DailyQuizView extends StatelessWidget {
                                     ? Colors.grey[850]
                                     : Colors.grey.shade100),
                           borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: isSelected
-                                ? Colors.transparent
-                                : Colors.grey.shade300,
-                          ),
                         ),
                         child: Center(
                           child: Text(
@@ -96,7 +89,6 @@ class DailyQuizView extends StatelessWidget {
                               color: isSelected
                                   ? Colors.white
                                   : (isDark ? Colors.white70 : Colors.black87),
-                              fontWeight: FontWeight.w500,
                               fontSize: 13,
                             ),
                           ),
@@ -111,7 +103,7 @@ class DailyQuizView extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          ///  QUIZ HEADER
+          /// QUIZ HEADER
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
@@ -129,16 +121,14 @@ class DailyQuizView extends StatelessWidget {
                 key: ValueKey(ctrl.selectedCategory.value),
                 stream: ctrl.getQuizStream(),
                 builder: (context, snapshot) {
+                  /// 🔄 SHIMMER LOADING
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: 5,
-                      itemBuilder: (_, __) => _shimmerCard(isDark),
-                    );
+                    return _quizShimmer(isDark);
                   }
 
+                  /// ❌ EMPTY
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text("No quizzes found"));
+                    return _EmptyQuizState(isDark: isDark);
                   }
 
                   final docs = snapshot.data!.docs;
@@ -179,7 +169,142 @@ class DailyQuizView extends StatelessWidget {
   }
 }
 
-/// ================= PREMIUM CARD =================
+//////////////////////////////////////////////////////////////////
+// 🟡 CATEGORY SHIMMER
+//////////////////////////////////////////////////////////////////
+
+Widget _categoryShimmer(bool isDark) {
+  return SizedBox(
+    height: 50,
+    child: ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      scrollDirection: Axis.horizontal,
+      itemCount: 5,
+      separatorBuilder: (_, __) => const SizedBox(width: 10),
+      itemBuilder: (_, __) {
+        return Shimmer.fromColors(
+          baseColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+          highlightColor: isDark ? Colors.grey.shade700 : Colors.grey.shade100,
+          child: Container(
+            width: 80,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey,
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+//////////////////////////////////////////////////////////////////
+// 🟡 QUIZ SHIMMER (MATCHES CARD UI)
+//////////////////////////////////////////////////////////////////
+
+Widget _quizShimmer(bool isDark) {
+  final base = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
+  final highlight = isDark ? Colors.grey.shade700 : Colors.grey.shade100;
+
+  return ListView.builder(
+    padding: const EdgeInsets.all(16),
+    itemCount: 5,
+    itemBuilder: (_, __) {
+      return Shimmer.fromColors(
+        baseColor: base,
+        highlightColor: highlight,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.grey,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 55,
+                height: 55,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 14,
+                      width: double.infinity,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(height: 10, width: 120, color: Colors.white),
+                  ],
+                ),
+              ),
+              Container(
+                width: 60,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+//////////////////////////////////////////////////////////////////
+// ❌ EMPTY STATE
+//////////////////////////////////////////////////////////////////
+
+class _EmptyQuizState extends StatelessWidget {
+  final bool isDark;
+
+  const _EmptyQuizState({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final sub = isDark ? Colors.white60 : Colors.black54;
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.quiz_outlined, size: 80, color: sub),
+          const SizedBox(height: 12),
+          Text(
+            "No Quizzes Available",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "Try another category",
+            style: TextStyle(fontSize: 12, color: sub),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+//////////////////////////////////////////////////////////////////
+// ✅ ORIGINAL CARD (UNCHANGED)
+//////////////////////////////////////////////////////////////////
+
 class _PremiumQuizCard extends StatelessWidget {
   final String title;
   final int questions;
@@ -215,13 +340,9 @@ class _PremiumQuizCard extends StatelessWidget {
             offset: const Offset(0, 6),
           ),
         ],
-        border: Border.all(
-          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-        ),
       ),
       child: Row(
         children: [
-          /// ICON
           Container(
             width: 55,
             height: 55,
@@ -233,60 +354,20 @@ class _PremiumQuizCard extends StatelessWidget {
             ),
             child: const Icon(Icons.quiz, color: Colors.white),
           ),
-
           const SizedBox(width: 14),
-
-          /// TEXT
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                ),
+                Text(title),
                 const SizedBox(height: 6),
-                Text(
-                  "$questions Questions • $time Min",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.white60 : Colors.grey,
-                  ),
-                ),
+                Text("$questions Questions • $time Min"),
               ],
             ),
           ),
-
-          /// BUTTON
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: onTap,
-            child: const Text("Start"),
-          ),
+          ElevatedButton(onPressed: onTap, child: const Text("Start")),
         ],
       ),
     );
   }
-}
-
-/// ================= SHIMMER =================
-Widget _shimmerCard(bool isDark) {
-  return Container(
-    margin: const EdgeInsets.only(bottom: 16),
-    height: 90,
-    decoration: BoxDecoration(
-      color: isDark ? Colors.grey[800] : Colors.grey.shade300,
-      borderRadius: BorderRadius.circular(16),
-    ),
-  );
 }

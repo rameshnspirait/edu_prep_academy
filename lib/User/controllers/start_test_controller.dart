@@ -32,13 +32,12 @@ class StartTestController extends GetxController {
   Map<String, dynamic>? quizData;
 
   static const int maxAttempts = 3;
+  final args = Get.arguments ?? {};
 
   /// ================= INIT =================
   @override
   void onInit() {
     super.onInit();
-
-    final args = Get.arguments ?? {};
 
     isDailyQuiz = args['isDailyQuiz'] ?? false;
 
@@ -268,7 +267,7 @@ class StartTestController extends GetxController {
       barrierDismissible: false,
     );
 
-    /// 🔥 SAVE ONLY FOR MOCK TEST
+    ///  SAVE ONLY FOR MOCK TEST
     if (!isDailyQuiz) {
       await _saveAttempt(correct, score, autoSubmit);
       await _updateUserStats();
@@ -309,16 +308,17 @@ class StartTestController extends GetxController {
       'correct': correct,
       'wrong': wrong,
       'totalQuestions': totalQuestions,
+      'testTitle': args['testTitle'] ?? '',
 
-      /// 🔥 OPTIONAL (FUTURE FEATURES)
+      ///  OPTIONAL (FUTURE FEATURES)
       'timeTaken': (duration * 60) - timeLeft.value,
       'autoSubmitted': autoSubmit,
 
-      /// 🔥 TIMESTAMP
+      ///  TIMESTAMP
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    /// 🔄 UPDATE LOCAL STATE
+    ///  UPDATE LOCAL STATE
     attemptCount.value = attempts;
 
     if (attempts >= maxAttempts) {
@@ -331,7 +331,7 @@ class StartTestController extends GetxController {
     if (user == null) return;
 
     try {
-      /// 🔥 GET ALL ATTEMPTS
+      ///  GET ALL ATTEMPTS
       final snapshot = await _firestore
           .collection('users')
           .doc(user.uid)
@@ -348,7 +348,7 @@ class StartTestController extends GetxController {
 
       double avgAccuracy = totalTests == 0 ? 0 : (totalAccuracy / totalTests);
 
-      /// 🔥 UPDATE USERS COLLECTION
+      ///  UPDATE USERS COLLECTION
       await _firestore.collection('users').doc(user.uid).set({
         'avgAccuracy': avgAccuracy,
         'totalTests': totalTests,
