@@ -27,7 +27,7 @@ class DailyQuizView extends StatelessWidget {
         children: [
           const SizedBox(height: 10),
 
-          /// 🔥 CATEGORY HEADER
+          ///  CATEGORY HEADER
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
@@ -111,7 +111,7 @@ class DailyQuizView extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          /// 🔥 QUIZ HEADER
+          ///  QUIZ HEADER
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
