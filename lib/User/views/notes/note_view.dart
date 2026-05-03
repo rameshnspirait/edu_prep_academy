@@ -386,12 +386,12 @@ class _NoteCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.blueAccent.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.workspace_premium,
-                color: Colors.orange,
+                color: Colors.blueAccent,
                 size: 32,
               ),
             ),
@@ -425,7 +425,8 @@ class _NoteCard extends StatelessWidget {
                   // TODO: Navigate to subscription screen
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),

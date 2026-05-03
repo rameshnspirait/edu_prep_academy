@@ -4,6 +4,7 @@ import 'package:edu_prep_academy/User/core/constants/app_colors.dart';
 import 'package:edu_prep_academy/User/core/constants/app_strings.dart';
 import 'package:edu_prep_academy/User/core/theme/theme_controller.dart';
 import 'package:edu_prep_academy/User/routes/app_routes.dart';
+import 'package:edu_prep_academy/User/views/profile/download_notes_view.dart';
 import 'package:edu_prep_academy/User/views/profile/my_test_attempt_view.dart';
 import 'package:edu_prep_academy/User/views/profile/widget/profile_shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -142,22 +143,23 @@ class ProfileView extends GetView<ProfileController> {
                       icon: Icons.picture_as_pdf_outlined,
                       title: "Downloaded Notes",
                       subtitle: "Offline PDFs",
-                    ),
-                    _card(
-                      icon: Icons.bookmark_border,
-                      title: "Saved Questions",
-                      subtitle: "Revise later",
+                      onTap: () => Get.to(() => const DownloadedNotesView()),
                     ),
 
+                    // _card(
+                    //   icon: Icons.bookmark_border,
+                    //   title: "Saved Questions",
+                    //   subtitle: "Revise later",
+                    // ),
                     const SizedBox(height: 24),
 
                     /// ================= SETTINGS =================
-                    _section("Account & Preferences"),
-                    _card(
-                      icon: Icons.school_outlined,
-                      title: "Exam Preferences",
-                      subtitle: "SSC, Banking, UPSC, CAT",
-                    ),
+                    _section("Account Settings"),
+                    // _card(
+                    //   icon: Icons.school_outlined,
+                    //   title: "Exam Preferences",
+                    //   subtitle: "SSC, Banking, UPSC, CAT",
+                    // ),
                     _card(
                       icon: Icons.dark_mode_rounded,
                       title: AppStrings.darkMode,
@@ -170,13 +172,13 @@ class ProfileView extends GetView<ProfileController> {
                         ),
                       ),
                     ),
-                    _card(
-                      icon: Icons.settings,
-                      title: "App Settings",
-                      subtitle: "Notifications & permissions",
-                      onTap: () => Get.toNamed(AppRoutes.settings),
-                    ),
 
+                    // _card(
+                    //   icon: Icons.settings,
+                    //   title: "App Settings",
+                    //   subtitle: "Notifications & permissions",
+                    //   onTap: () => Get.toNamed(AppRoutes.settings),
+                    // ),
                     const SizedBox(height: 24),
 
                     /// ================= SUPPORT =================
@@ -191,7 +193,7 @@ class ProfileView extends GetView<ProfileController> {
                       icon: Icons.feedback_outlined,
                       title: "Feedback",
                       subtitle: "Help us improve",
-                      onTap: () => Get.toNamed(AppRoutes.feedback),
+                      // onTap: () => Get.toNamed(AppRoutes.feedback),
                     ),
                     _card(
                       icon: Icons.share_outlined,

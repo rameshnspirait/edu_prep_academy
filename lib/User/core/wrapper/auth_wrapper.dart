@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edu_prep_academy/Admin/bindings/admin_binding.dart';
 import 'package:edu_prep_academy/Admin/views/home/admin_home_page.dart';
+import 'package:edu_prep_academy/User/views/DB/hive_service.dart';
 import 'package:edu_prep_academy/User/views/auth/login_view.dart';
 import 'package:edu_prep_academy/User/views/dashbaord/dashboard_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -28,7 +29,7 @@ class AuthWrapper extends StatelessWidget {
 
         final user = authSnapshot.data!;
 
-        /// 🔥 FETCH USER ROLE
+        /// 🔥 STEP 1: FETCH USER ROLE
         return FutureBuilder<DocumentSnapshot>(
           future: FirebaseFirestore.instance
               .collection('users')
@@ -48,16 +49,27 @@ class AuthWrapper extends StatelessWidget {
             }
 
             final data = userSnapshot.data!.data() as Map<String, dynamic>;
-
             final role = data['role'] ?? 'student';
 
-            /// 🎯 ROLE-BASED ROUTING
-            if (role == 'admin') {
-              AdminBinding().dependencies();
-              return const AdminHomePage();
-            } else {
-              return const DashboardView();
-            }
+            /// 🔥 STEP 2: OPEN HIVE USER BOX
+            return FutureBuilder(
+              future: HiveService.openUserBox(user.uid),
+              builder: (context, hiveSnapshot) {
+                if (hiveSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                /// 🎯 STEP 3: ROLE BASED NAVIGATION
+                if (role == 'admin') {
+                  AdminBinding().dependencies();
+                  return const AdminHomePage();
+                } else {
+                  return const DashboardView();
+                }
+              },
+            );
           },
         );
       },

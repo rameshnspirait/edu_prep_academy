@@ -1,4 +1,9 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:edu_prep_academy/User/views/DB/hive_service.dart';
+import 'package:edu_prep_academy/User/views/DB/pdf_download_service.dart';
+import 'package:edu_prep_academy/User/views/DB/pdf_model.dart';
 import 'package:get/get.dart';
 import '../models/note_model.dart';
 
@@ -78,6 +83,61 @@ class NotesController extends GetxController {
       }
     } finally {
       isLoadingMore.value = false;
+    }
+  }
+
+  //============================Notes Downlod Logic============================
+  final RxList<PdfModel> downloadedPdfs = <PdfModel>[].obs;
+  final RxBool isDownloading = false.obs;
+
+  void loadPdfs(String userId) {
+    downloadedPdfs.assignAll(HiveService.getAllPdfs(userId));
+  }
+
+  Future<void> downloadPdf({
+    required String id,
+    required String title,
+    required String url,
+    required String userId,
+  }) async {
+    if (HiveService.isDownloaded(userId, id)) {
+      Get.snackbar("Already Downloaded", "Open from Downloads");
+      return;
+    }
+
+    isDownloading.value = true;
+
+    final path = await PdfDownloadService.downloadPdf(
+      url: url,
+      fileName: title,
+    );
+
+    isDownloading.value = false;
+
+    if (path != null) {
+      final pdf = PdfModel(
+        id: id,
+        title: title,
+        filePath: path,
+        downloadedAt: DateTime.now(),
+      );
+
+      await HiveService.savePdf(userId, pdf);
+      loadPdfs(userId);
+
+      Get.snackbar("Success", "PDF Downloaded");
+    } else {
+      Get.snackbar("Error", "Download failed");
+    }
+  }
+
+  void deletePdf(String id, String userId) async {
+    final pdf = HiveService.getPdf(userId, id);
+
+    if (pdf != null) {
+      File(pdf.filePath).deleteSync();
+      await HiveService.deletePdf(userId, id);
+      loadPdfs(userId);
     }
   }
 }

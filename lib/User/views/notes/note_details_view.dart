@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:edu_prep_academy/User/core/utils/app_utils.dart';
 import 'package:edu_prep_academy/User/models/note_model.dart';
+import 'package:edu_prep_academy/User/views/DB/hive_service.dart';
+import 'package:edu_prep_academy/User/views/DB/pdf_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
@@ -18,14 +21,18 @@ class NoteDetailView extends StatefulWidget {
 
 class _NoteDetailViewState extends State<NoteDetailView> {
   final PdfViewerController _pdfController = PdfViewerController();
+  final String userId = FirebaseAuth.instance.currentUser!.uid;
 
+  bool _isDownloaded = false;
   bool _isLoading = true;
   bool _focusMode = false;
   File? _localFile;
-
   @override
   void initState() {
     super.initState();
+
+    _isDownloaded = HiveService.isDownloaded(userId, widget.note.id);
+
     _preparePdf();
   }
 
@@ -140,14 +147,73 @@ class _NoteDetailViewState extends State<NoteDetailView> {
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               actions: [
+                /// 🔍 SEARCH
                 IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: _openSearch,
                 ),
+
+                /// 📥 DOWNLOAD BUTTON (ADD THIS)
+                Visibility(
+                  visible: widget.note.isFree,
+                  child: IconButton(
+                    icon: Icon(
+                      _isDownloaded
+                          ? Icons.check_circle
+                          : Icons.download_rounded,
+                      color: _isDownloaded ? Colors.green : null,
+                    ),
+                    onPressed: () async {
+                      if (_isDownloaded) {
+                        Get.snackbar("Downloaded", "Already available offline");
+                        return;
+                      }
+
+                      setState(() => _isLoading = true);
+
+                      try {
+                        final dir = await getApplicationDocumentsDirectory();
+                        final file = File('${dir.path}/${widget.note.id}.pdf');
+
+                        final dio = Dio();
+                        final response = await dio.get(
+                          widget.note.pdfUrl,
+                          options: Options(responseType: ResponseType.bytes),
+                        );
+
+                        await file.writeAsBytes(response.data);
+
+                        _localFile = file;
+
+                        /// 🔥 SAVE TO HIVE (THIS WAS MISSING)
+                        await HiveService.savePdf(
+                          userId,
+                          PdfModel(
+                            id: widget.note.id,
+                            title: widget.note.title,
+                            filePath: file.path,
+                            downloadedAt: DateTime.now(),
+                          ),
+                        );
+
+                        setState(() {
+                          _isDownloaded = true;
+                        });
+
+                        Get.snackbar("Success", "PDF saved for offline use");
+                      } catch (e) {
+                        Get.snackbar("Error", "Download failed");
+                      } finally {
+                        setState(() => _isLoading = false);
+                      }
+                    },
+                  ),
+                ),
+
+                /// 🌙 THEME SWITCH
                 IconButton(
                   icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
                   onPressed: () {
-                    /// 🔥 CHANGE GLOBAL THEME
                     Get.changeThemeMode(
                       isDark ? ThemeMode.light : ThemeMode.dark,
                     );

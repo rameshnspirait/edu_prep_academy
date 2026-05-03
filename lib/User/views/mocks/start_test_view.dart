@@ -3,6 +3,7 @@ import 'package:edu_prep_academy/User/controllers/start_test_controller.dart';
 import 'package:edu_prep_academy/User/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:vibration/vibration.dart';
 
 class StartTestView extends GetView<StartTestController> {
   const StartTestView({super.key});
@@ -65,7 +66,21 @@ class StartTestView extends GetView<StartTestController> {
                           isCorrect: selected != null && i == correct,
                           isWrong: selected == i && i != correct,
                           isLocked: selected != null,
-                          onTap: () => controller.selectOption(i),
+                          onTap: () async {
+                            if (selected != null) return; // ✅ prevent re-tap
+
+                            controller.selectOption(i);
+
+                            final correctIndex = question['correctIndex'];
+
+                            if (i == correctIndex) {
+                              // await SoundService.playCorrect();
+                              Vibration.vibrate(duration: 80);
+                            } else {
+                              // await SoundService.playWrong();
+                              Vibration.vibrate(duration: 200);
+                            }
+                          },
                         ),
                       ),
 
@@ -438,7 +453,7 @@ class _QuestionCard extends StatelessWidget {
   }
 }
 
-class _OptionTile extends StatelessWidget {
+class _OptionTile extends StatefulWidget {
   final String label;
   final String text;
   final bool isSelected;
@@ -458,6 +473,46 @@ class _OptionTile extends StatelessWidget {
   });
 
   @override
+  State<_OptionTile> createState() => _OptionTileState();
+}
+
+class _OptionTileState extends State<_OptionTile>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _shake;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+
+    _shake = Tween<double>(
+      begin: 0,
+      end: 10,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticIn));
+  }
+
+  @override
+  void didUpdateWidget(covariant _OptionTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    /// ❌ ONLY SHAKE WHEN WRONG SELECTED
+    if (widget.isWrong && !oldWidget.isWrong) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -466,72 +521,87 @@ class _OptionTile extends StatelessWidget {
     Color badgeBg = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
     Color badgeText = isDark ? Colors.white70 : Colors.black87;
 
-    if (isCorrect) {
+    if (widget.isCorrect) {
       borderColor = Colors.green;
       bgColor = Colors.green.withOpacity(0.12);
       badgeBg = Colors.green.withOpacity(0.2);
       badgeText = Colors.green;
-    } else if (isWrong) {
+    } else if (widget.isWrong) {
       borderColor = Colors.red;
       bgColor = Colors.red.withOpacity(0.12);
       badgeBg = Colors.red.withOpacity(0.2);
       badgeText = Colors.red;
-    } else if (isSelected) {
+    } else if (widget.isSelected) {
       borderColor = AppColors.primaryBlue;
       bgColor = AppColors.primaryBlue.withOpacity(0.12);
       badgeBg = AppColors.primaryBlue.withOpacity(0.2);
       badgeText = AppColors.primaryBlue;
     }
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: isLocked ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor, width: 1.5),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: badgeBg),
-              child: Text(
-                label,
-                style: TextStyle(fontWeight: FontWeight.bold, color: badgeText),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.5,
-                  color: isDark ? Colors.white70 : Colors.black87,
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(_shake.value * (widget.isWrong ? 1 : 0), 0),
+          child: child,
+        );
+      },
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: widget.isLocked ? null : widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: badgeBg,
+                ),
+                child: Text(
+                  widget.label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: badgeText,
+                  ),
                 ),
               ),
-            ),
-            if (isLocked)
-              Icon(
-                isCorrect
-                    ? Icons.check_circle
-                    : isWrong
-                    ? Icons.cancel
-                    : null,
-                color: isCorrect
-                    ? Colors.green
-                    : isWrong
-                    ? Colors.red
-                    : Colors.transparent,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  widget.text,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.5,
+                    color: isDark ? Colors.white70 : Colors.black87,
+                  ),
+                ),
               ),
-          ],
+              if (widget.isLocked)
+                Icon(
+                  widget.isCorrect
+                      ? Icons.check_circle
+                      : widget.isWrong
+                      ? Icons.cancel
+                      : null,
+                  color: widget.isCorrect
+                      ? Colors.green
+                      : widget.isWrong
+                      ? Colors.red
+                      : Colors.transparent,
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -89,7 +89,7 @@ class MockTestsView extends GetView<MockTestsController> {
                           crossAxisCount: 2,
                           mainAxisSpacing: 12,
                           crossAxisSpacing: 12,
-                          childAspectRatio: 0.85,
+                          childAspectRatio: 0.72, // balanced default
                         ),
                     itemBuilder: (_, i) {
                       final test = tests[i];
@@ -363,119 +363,132 @@ class _TestCard extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? Colors.black.withOpacity(0.4)
-                  : Colors.grey.withOpacity(0.18),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      thumbnailUrl.isEmpty
-                          ? "https://via.placeholder.com/300"
-                          : thumbnailUrl,
-                      fit: BoxFit.cover,
-                    ),
-
-                    /// FREE / PAID
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isFree ? Colors.green : Colors.orange,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          isFree ? "FREE" : "PREMIUM",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    /// ✅ USE questionText HERE (FIX)
-                    Positioned(top: 8, right: 8, child: _chip(questionText)),
-
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: _chip("$duration min"),
-                    ),
-
-                    if (isLocked)
-                      Container(
-                        color: Colors.black.withOpacity(0.5),
-                        child: const Center(
-                          child: Icon(
-                            Icons.lock,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.4)
+                    : Colors.grey.withOpacity(0.18),
+                blurRadius: 14,
+                offset: const Offset(0, 8),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-              child: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                "Uploaded: ${uploadedAt.day}/${uploadedAt.month}/${uploadedAt.year}",
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: SizedBox(
-                width: double.infinity,
-                height: 38,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: isLocked
-                        ? Colors.black45
-                        : isDark
-                        ? Colors.white
-                        : Colors.white,
-                    backgroundColor: isLocked
-                        ? Colors.grey
-                        : AppColors.primaryBlue,
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
                   ),
-                  onPressed: onTap,
-                  child: Text(isLocked ? "Locked" : "Start Test"),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        thumbnailUrl.isEmpty
+                            ? "https://via.placeholder.com/300"
+                            : thumbnailUrl,
+                        fit: BoxFit.cover,
+                      ),
+
+                      /// FREE / PAID
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: isFree
+                                ? const LinearGradient(
+                                    colors: [Colors.green, Colors.teal],
+                                  )
+                                : const LinearGradient(
+                                    colors: [Colors.orange, Colors.red],
+                                  ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            isFree ? "FREE" : "PREMIUM",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      /// ✅ USE questionText HERE (FIX)
+                      Positioned(top: 8, right: 8, child: _chip(questionText)),
+
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: _chip("$duration min"),
+                      ),
+
+                      if (isLocked)
+                        Container(
+                          color: Colors.black.withOpacity(0.5),
+                          child: const Center(
+                            child: Icon(
+                              Icons.lock,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  "Uploaded: ${uploadedAt.day}/${uploadedAt.month}/${uploadedAt.year}",
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 38,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: isLocked
+                          ? Colors.black45
+                          : isDark
+                          ? Colors.white
+                          : Colors.white,
+                      backgroundColor: isLocked
+                          ? Colors.grey
+                          : AppColors.primaryBlue,
+                    ),
+                    onPressed: onTap,
+                    child: Text(isLocked ? "Locked" : "Start Test"),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
