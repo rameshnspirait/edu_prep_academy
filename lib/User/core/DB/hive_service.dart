@@ -1,4 +1,4 @@
-import 'package:edu_prep_academy/User/views/DB/pdf_model.dart';
+import 'package:edu_prep_academy/User/core/DB/pdf_model.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class HiveService {

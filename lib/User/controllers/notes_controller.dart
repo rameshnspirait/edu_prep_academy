@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:edu_prep_academy/User/views/DB/hive_service.dart';
-import 'package:edu_prep_academy/User/views/DB/pdf_download_service.dart';
-import 'package:edu_prep_academy/User/views/DB/pdf_model.dart';
+import 'package:edu_prep_academy/User/core/DB/hive_service.dart';
+import 'package:edu_prep_academy/User/core/DB/pdf_download_service.dart';
+import 'package:edu_prep_academy/User/core/DB/pdf_model.dart';
 import 'package:get/get.dart';
 import '../models/note_model.dart';
 

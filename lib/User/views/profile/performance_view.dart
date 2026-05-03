@@ -4,8 +4,9 @@ import 'package:get/get.dart';
 import '../../controllers/profile_controller.dart';
 import '../../core/constants/app_colors.dart';
 
-class PerformanceView extends GetView<ProfileController> {
-  const PerformanceView({super.key});
+class PerformanceView extends StatelessWidget {
+  PerformanceView({super.key});
+  final controller = Get.put(ProfileController());
 
   @override
   Widget build(BuildContext context) {

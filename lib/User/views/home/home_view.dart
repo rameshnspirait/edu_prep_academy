@@ -5,6 +5,7 @@ import 'package:edu_prep_academy/User/core/theme/theme_controller.dart';
 import 'package:edu_prep_academy/User/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -424,6 +425,108 @@ class _ActionCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class HomeShimmer extends StatelessWidget {
+  const HomeShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          /// ---------------- GREETING SHIMMER ----------------
+          _shimmerBox(height: 110, radius: 20, context: context),
+
+          const SizedBox(height: 20),
+
+          /// ---------------- BANNER SHIMMER ----------------
+          _shimmerBox(height: 150, radius: 20, context: context),
+
+          const SizedBox(height: 20),
+
+          /// ---------------- TITLE SHIMMER ----------------
+          _shimmerBox(height: 20, width: 140, radius: 8, context: context),
+
+          const SizedBox(height: 16),
+
+          /// ---------------- GRID SHIMMER ----------------
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 6,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 14,
+              crossAxisSpacing: 14,
+              childAspectRatio: 1.05,
+            ),
+            itemBuilder: (context, index) {
+              return _shimmerCard(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// BOX SHIMMER
+  Widget _shimmerBox({
+    double height = 100,
+    double? width,
+    double radius = 12,
+    required BuildContext context,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Shimmer.fromColors(
+      baseColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+      highlightColor: isDark ? Colors.grey.shade700 : Colors.grey.shade100,
+      child: Container(
+        height: height,
+        width: width ?? double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      ),
+    );
+  }
+
+  /// GRID CARD SHIMMER
+  Widget _shimmerCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Shimmer.fromColors(
+      baseColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+      highlightColor: isDark ? Colors.grey.shade700 : Colors.grey.shade100,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 45,
+              width: 45,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const Spacer(),
+            Container(height: 14, width: 100, color: Colors.white),
+            const SizedBox(height: 8),
+            Container(height: 12, width: 70, color: Colors.white),
+          ],
         ),
       ),
     );

@@ -110,6 +110,7 @@ class StartTestController extends GetxController {
           'options': List<String>.from(data['options'] ?? []),
           'correctIndex': data['correctIndex'] ?? 0,
           'marks': data['marks'] ?? 1,
+          'explanation': data['explanation'] ?? "No explanation available.",
         };
       }).toList();
 

@@ -187,7 +187,7 @@ class ProfileView extends GetView<ProfileController> {
                       icon: Icons.help_outline,
                       title: "Help & Support",
                       subtitle: "FAQs & contact",
-                      onTap: () => Get.toNamed(AppRoutes.helpSupport),
+                      // onTap: () => Get.toNamed(AppRoutes.helpSupport),
                     ),
                     _card(
                       icon: Icons.feedback_outlined,

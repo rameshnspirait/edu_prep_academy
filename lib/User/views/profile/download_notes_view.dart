@@ -1,5 +1,5 @@
 import 'package:edu_prep_academy/User/core/utils/app_utils.dart';
-import 'package:edu_prep_academy/User/views/DB/hive_service.dart';
+import 'package:edu_prep_academy/User/core/DB/hive_service.dart';
 import 'package:edu_prep_academy/User/views/profile/pdf_view_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +16,11 @@ class DownloadedNotesView extends StatelessWidget {
     final pdfs = HiveService.getAllPdfs(userId);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Downloaded Notes"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("Downloaded Notes"),
+        centerTitle: true,
+        elevation: 8,
+      ),
 
       body: pdfs.isEmpty
           ? _emptyState()
