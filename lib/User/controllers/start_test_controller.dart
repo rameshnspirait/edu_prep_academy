@@ -9,13 +9,19 @@ class StartTestController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  /// ================= COLLECTION NAMES =================
+  static const String mockCollection = "mock_attempts";
+  static const String quizCollection = "daily_quiz_attempts";
+
   /// ================= STATE =================
   final RxList<Map<String, dynamic>> questions = <Map<String, dynamic>>[].obs;
+
   final RxInt currentIndex = 0.obs;
   final RxInt timeLeft = 0.obs;
   final RxBool isLoading = true.obs;
   final RxBool isPaused = false.obs;
   final RxBool warningShown = false.obs;
+
   final RxMap<int, int> selectedAnswers = <int, int>{}.obs;
 
   final RxInt attemptCount = 0.obs;
@@ -27,7 +33,7 @@ class StartTestController extends GetxController {
   late String categoryId;
   late int duration;
 
-  ///  MODE
+  /// MODE
   bool isDailyQuiz = false;
   Map<String, dynamic>? quizData;
 
@@ -42,13 +48,11 @@ class StartTestController extends GetxController {
     isDailyQuiz = args['isDailyQuiz'] ?? false;
 
     if (isDailyQuiz) {
-      /// ===== DAILY QUIZ =====
       quizData = args['quizData'];
       duration = quizData?['time'] ?? 10;
 
       _initializeDailyQuiz(args['category'], args['quizId']);
     } else {
-      /// ===== MOCK TEST =====
       if (!args.containsKey('testId') ||
           !args.containsKey('duration') ||
           !args.containsKey('categoryId')) {
@@ -64,11 +68,7 @@ class StartTestController extends GetxController {
     }
   }
 
-  String formatCategoryId(String name) {
-    return name.trim().replaceAll("/", "-").replaceAll(" ", "_");
-  }
-
-  /// ================= DAILY QUIZ =================
+  /// ================= DAILY QUIZ INIT =================
   void _initializeDailyQuiz(String? categoryId, String? quizId) {
     _timer?.cancel();
 
@@ -91,16 +91,11 @@ class StartTestController extends GetxController {
 
       final snapshot = await _firestore
           .collection('daily_quizzes')
-          .doc(formatCategoryId(category)) // ✅ FIXED
+          .doc(category.replaceAll("/", "-").replaceAll(" ", "_"))
           .collection('quizzes')
           .doc(quizId)
           .collection('questions')
           .get();
-
-      if (snapshot.docs.isEmpty) {
-        debugPrint("❌ No questions found");
-        return;
-      }
 
       questions.value = snapshot.docs.map((doc) {
         final data = doc.data();
@@ -122,7 +117,7 @@ class StartTestController extends GetxController {
     }
   }
 
-  /// ================= MOCK TEST =================
+  /// ================= MOCK INIT =================
   Future<void> _checkAttemptsThenInit() async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -130,7 +125,7 @@ class StartTestController extends GetxController {
     final ref = _firestore
         .collection('users')
         .doc(user.uid)
-        .collection('mock_attempts')
+        .collection(mockCollection)
         .doc(testId);
 
     final snap = await ref.get();
@@ -141,7 +136,6 @@ class StartTestController extends GetxController {
 
     attemptCount.value = attempts;
 
-    ///  24H LOCK LOGIC
     if (attempts >= maxAttempts && last != null) {
       final diff = DateTime.now().difference(last.toDate());
 
@@ -188,11 +182,6 @@ class StartTestController extends GetxController {
           .collection('questions')
           .orderBy('createdAt')
           .get();
-
-      if (snapshot.docs.isEmpty) {
-        Get.back();
-        return;
-      }
 
       questions.assignAll(
         snapshot.docs.map((doc) {
@@ -257,7 +246,6 @@ class StartTestController extends GetxController {
 
     final score = ((correct / questions.length) * 100).round();
 
-    /// 🎯 RESULT
     Get.dialog(
       ResultDialog(
         score: score,
@@ -269,22 +257,23 @@ class StartTestController extends GetxController {
       barrierDismissible: false,
     );
 
-    ///  SAVE ONLY FOR MOCK TEST
-    if (!isDailyQuiz) {
-      await _saveAttempt(correct, score, autoSubmit);
+    if (isDailyQuiz) {
+      await _saveDailyQuizAttempt(correct, score, autoSubmit);
+    } else {
+      await _saveMockAttempt(correct, score, autoSubmit);
       await _updateUserStats();
     }
   }
 
-  /// ================= SAVE ATTEMPT =================
-  Future<void> _saveAttempt(int correct, int score, bool autoSubmit) async {
+  /// ================= MOCK SAVE =================
+  Future<void> _saveMockAttempt(int correct, int score, bool autoSubmit) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
     final ref = _firestore
         .collection('users')
         .doc(user.uid)
-        .collection('mock_attempts')
+        .collection(mockCollection)
         .doc(testId);
 
     final snap = await ref.get();
@@ -294,86 +283,123 @@ class StartTestController extends GetxController {
 
     final int totalQuestions = questions.length;
     final int wrong = totalQuestions - correct;
-
-    ///  Accuracy Calculation
     final double accuracy = totalQuestions == 0
         ? 0
         : (correct / totalQuestions) * 100;
 
     await ref.set({
       'testId': testId,
+      'testTitle': args['testTitle'] ?? '',
       'attemptCount': attempts,
-
-      ///  CORE STATS
-      'lastScore': score, // percentage
+      'lastScore': score,
       'lastAccuracy': accuracy,
       'correct': correct,
       'wrong': wrong,
       'totalQuestions': totalQuestions,
-      'testTitle': args['testTitle'] ?? '',
-
-      ///  OPTIONAL (FUTURE FEATURES)
       'timeTaken': (duration * 60) - timeLeft.value,
       'autoSubmitted': autoSubmit,
-
-      ///  TIMESTAMP
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    ///  UPDATE LOCAL STATE
     attemptCount.value = attempts;
-
     if (attempts >= maxAttempts) {
       isAttemptLimitReached.value = true;
     }
   }
 
+  /// ================= QUIZ SAVE =================
+  Future<void> _saveDailyQuizAttempt(
+    int correct,
+    int score,
+    bool autoSubmit,
+  ) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final quizId = args['quizId'] ?? "unknown";
+
+    final ref = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection(quizCollection)
+        .doc(quizId);
+
+    final snap = await ref.get();
+    final data = snap.data() ?? {};
+
+    final int attempts = (data['attemptCount'] ?? 0) + 1;
+
+    final int totalQuestions = questions.length;
+    final int wrong = totalQuestions - correct;
+    final double accuracy = totalQuestions == 0
+        ? 0
+        : (correct / totalQuestions) * 100;
+
+    await ref.set({
+      'quizId': quizId,
+      'category': args['category'] ?? '',
+      'attemptCount': attempts,
+      'lastScore': score,
+      'lastAccuracy': accuracy,
+      'correct': correct,
+      'wrong': wrong,
+      'totalQuestions': totalQuestions,
+      'timeTaken': (duration * 60) - timeLeft.value,
+      'autoSubmitted': autoSubmit,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  /// ================= USER STATS =================
   Future<void> _updateUserStats() async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    try {
-      ///  GET ALL ATTEMPTS
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('mock_attempts')
-          .get();
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection(mockCollection)
+        .get();
 
-      int totalTests = snapshot.docs.length;
+    int totalTests = snapshot.docs.length;
+    double totalAccuracy = 0;
 
-      double totalAccuracy = 0;
-
-      for (var doc in snapshot.docs) {
-        totalAccuracy += (doc.data()['lastAccuracy'] ?? 0).toDouble();
-      }
-
-      double avgAccuracy = totalTests == 0 ? 0 : (totalAccuracy / totalTests);
-
-      ///  UPDATE USERS COLLECTION
-      await _firestore.collection('users').doc(user.uid).set({
-        'avgAccuracy': avgAccuracy,
-        'totalTests': totalTests,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } catch (e) {
-      print("User stats error: $e");
+    for (var doc in snapshot.docs) {
+      totalAccuracy += (doc.data()['lastAccuracy'] ?? 0).toDouble();
     }
+
+    double avgAccuracy = totalTests == 0 ? 0 : (totalAccuracy / totalTests);
+
+    await _firestore.collection('users').doc(user.uid).set({
+      'avgAccuracy': avgAccuracy,
+      'totalTests': totalTests,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
-  /// ================= RESET =================
   Future<void> resetTestAndCloseDialog(BuildContext context) async {
+    /// Close dialog if open
     if (Get.isDialogOpen ?? false) {
-      Navigator.pop(context);
+      Get.back();
     }
 
-    /// Daily Quiz → Exit
+    /// Stop timer
+    _timer?.cancel();
+
+    /// Reset state
+    selectedAnswers.clear();
+    currentIndex.value = 0;
+    timeLeft.value = duration * 60;
+    isPaused.value = false;
+    warningShown.value = false;
+
+    /// If daily quiz → just go back
     if (isDailyQuiz) {
       Get.back();
       return;
     }
 
-    /// Re-check attempts before restart
+    /// For mock test → re-check attempt rules
     await _checkAttemptsThenInit();
   }
 
