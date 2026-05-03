@@ -68,6 +68,18 @@ class StartTestView extends GetView<StartTestController> {
                           onTap: () => controller.selectOption(i),
                         ),
                       ),
+
+                      /// ✅ EXPLANATION (SHOW ONLY AFTER SELECT)
+                      if (selected != null) ...[
+                        const SizedBox(height: 20),
+
+                        _ExplanationCard(
+                          isCorrect: selected == correct,
+                          explanation:
+                              question['explanation'] ??
+                              "No explanation available.",
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -255,6 +267,69 @@ class StartTestView extends GetView<StartTestController> {
         ),
       ),
       barrierDismissible: false, // 🔥 Prevent accidental close
+    );
+  }
+}
+
+class _ExplanationCard extends StatelessWidget {
+  final bool isCorrect;
+  final String explanation;
+
+  const _ExplanationCard({required this.isCorrect, required this.explanation});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgColor = isCorrect
+        ? Colors.green.withOpacity(0.12)
+        : Colors.red.withOpacity(0.12);
+
+    final borderColor = isCorrect ? Colors.green : Colors.red;
+
+    final title = isCorrect ? "Correct Answer" : "Wrong Answer";
+
+    final icon = isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// HEADER
+          Row(
+            children: [
+              Icon(icon, color: borderColor),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: borderColor,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          /// EXPLANATION TEXT
+          Text(
+            explanation,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: isDark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
