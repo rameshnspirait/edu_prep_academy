@@ -76,76 +76,73 @@ class AdminMockTestController extends GetxController {
       isLoading.value = true;
 
       final List data = jsonDecode(jsonString);
-      final batch = _firestore.batch();
 
-      for (var block in data) {
-        final String categoryId = block['category']?.toString().trim() ?? '';
+      for (var categoryBlock in data) {
+        final String categoryId =
+            categoryBlock['category']?.toString().trim() ?? '';
 
-        final String testTitle = block['testTitle']?.toString() ?? '';
+        final List testsList = categoryBlock['tests'] ?? [];
 
-        final int duration =
-            int.tryParse(block['duration']?.toString() ?? '0') ?? 0;
-
-        final String thumbnail = block['thumbnail']?.toString() ?? '';
-
-        final bool isFree = block['isFree'] is bool ? block['isFree'] : true;
-
-        final List questions = block['questions'] ?? [];
-
-        // ================= CATEGORY =================
         final categoryRef = _firestore.collection('mock_tests').doc(categoryId);
 
-        batch.set(categoryRef, {
+        await categoryRef.set({
           'name': categoryId,
           'createdAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
-        // ================= TEST =================
-        final testRef = categoryRef.collection('tests').doc();
+        /// 🔥 LOOP TESTS
+        for (var test in testsList) {
+          final batch = _firestore.batch();
 
-        batch.set(testRef, {
-          'testId': testRef.id,
-          'title': testTitle,
-          'duration': duration,
-          'thumbnail': thumbnail,
-          'isFree': isFree,
-          'totalQuestions': questions.length,
-          'categoryId': categoryId,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+          final String title = test['testTitle']?.toString() ?? '';
+          final int duration =
+              int.tryParse(test['duration']?.toString() ?? '0') ?? 0;
+          final String thumbnail = test['thumbnail']?.toString() ?? '';
+          final bool isFree = test['isFree'] is bool ? test['isFree'] : true;
 
-        // ================= QUESTIONS =================
-        final questionCol = testRef.collection('questions');
+          final List questions = test['questions'] ?? [];
 
-        for (var q in questions) {
-          final docRef = questionCol.doc();
+          final testRef = categoryRef.collection('tests').doc();
 
-          final rawOptions = q['options'];
-
-          final List<String> safeOptions = rawOptions == null
-              ? []
-              : List<String>.from(
-                  (rawOptions as List).map((e) => e.toString()),
-                );
-
-          batch.set(docRef, {
-            'question': q['question']?.toString() ?? '',
-            'options': safeOptions,
-            'correctIndex':
-                int.tryParse(q['correctIndex']?.toString() ?? '0') ?? 0,
-            'explanation': q['explanation']?.toString() ?? '',
+          /// TEST
+          batch.set(testRef, {
+            'testId': testRef.id,
+            'title': title,
+            'duration': duration,
+            'thumbnail': thumbnail,
+            'isFree': isFree,
+            'totalQuestions': questions.length,
+            'categoryId': categoryId,
             'createdAt': FieldValue.serverTimestamp(),
           });
+
+          /// QUESTIONS
+          for (var q in questions) {
+            final docRef = testRef.collection('questions').doc();
+
+            final List<String> options =
+                (q['options'] as List?)?.map((e) => e.toString()).toList() ??
+                [];
+
+            batch.set(docRef, {
+              'question': q['question']?.toString() ?? '',
+              'options': options,
+              'correctIndex':
+                  int.tryParse(q['correctIndex']?.toString() ?? '0') ?? 0,
+              'explanation': q['explanation']?.toString() ?? '',
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
+
+          await batch.commit(); //  commit per test (safe for large data)
         }
       }
 
-      await batch.commit();
-
       Get.snackbar("Success", "Bulk upload completed");
 
-      // 🔥 FIX: REFRESH UI
       await refreshAllData();
     } catch (e) {
+      print("UPLOAD ERROR: $e");
       Get.snackbar("Error", e.toString());
     } finally {
       isLoading.value = false;

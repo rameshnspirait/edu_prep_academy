@@ -188,20 +188,20 @@ class _NoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final date = AppUtils.format(note.createdAt);
+    final isLocked = !note.isFree;
 
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          if (isLocked) {
+            _showPremiumSheet(context);
+          } else {
+            onTap?.call();
+          }
+        },
         borderRadius: BorderRadius.circular(16),
-        splashColor: isDark
-            ? Colors.white10
-            : Theme.of(context).primaryColor.withOpacity(0.08),
-        highlightColor: isDark
-            ? Colors.white10
-            : Theme.of(context).primaryColor.withOpacity(0.04),
-
         child: Container(
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
@@ -216,14 +216,14 @@ class _NoteCard extends StatelessWidget {
               ),
             ],
           ),
-
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// THUMBNAIL + TAG
+              /// ================= IMAGE + BADGES =================
               Expanded(
                 child: Stack(
                   children: [
+                    /// IMAGE
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(16),
@@ -232,6 +232,54 @@ class _NoteCard extends StatelessWidget {
                         imageUrl: note.thumbnail,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(16),
+                        ),
+                      ),
+                    ),
+
+                    /// 🔥 LOCK OVERLAY
+                    if (isLocked)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.55),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(16),
+                          ),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.lock,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                      ),
+
+                    /// 🔥 FREE / PREMIUM BADGE
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: note.isFree
+                              ? const LinearGradient(
+                                  colors: [Colors.green, Colors.teal],
+                                )
+                              : const LinearGradient(
+                                  colors: [Colors.orange, Colors.red],
+                                ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          note.isFree ? "FREE" : "PREMIUM",
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -273,7 +321,7 @@ class _NoteCard extends StatelessWidget {
                 ),
               ),
 
-              /// CONTENT
+              /// ================= CONTENT =================
               Padding(
                 padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
                 child: Column(
@@ -317,6 +365,77 @@ class _NoteCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// ================= PREMIUM BOTTOM SHEET =================
+  void _showPremiumSheet(BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            /// ICON
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.workspace_premium,
+                color: Colors.orange,
+                size: 32,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            /// TITLE
+            const Text(
+              "Premium Content 🔒",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 8),
+
+            /// SUBTITLE
+            Text(
+              "Unlock this note by purchasing premium subscription.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+
+            const SizedBox(height: 20),
+
+            /// BUTTON
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () {
+                  Get.back();
+                  // TODO: Navigate to subscription screen
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text("Unlock Now"),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+          ],
         ),
       ),
     );

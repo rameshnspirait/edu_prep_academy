@@ -7,12 +7,16 @@ class NoteModel {
   final String pdfUrl;
   final DateTime createdAt;
 
+  /// 🔥 NEW FIELD
+  final bool isFree;
+
   NoteModel({
     required this.id,
     required this.title,
     required this.thumbnail,
     required this.pdfUrl,
     required this.createdAt,
+    required this.isFree,
   });
 
   factory NoteModel.fromJson(Map<String, dynamic> json, String docId) {
@@ -22,8 +26,13 @@ class NoteModel {
       thumbnail: json['thumbnail'] ?? '',
       pdfUrl: json['pdfUrl'] ?? '',
 
-      /// 🔥 FIX IS HERE
-      createdAt: (json['createdAt'] as Timestamp).toDate(),
+      /// ✅ SAFE DATE HANDLING
+      createdAt: json['createdAt'] is Timestamp
+          ? (json['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+
+      /// 🔥 DEFAULT FREE IF NOT PRESENT
+      isFree: json['isFree'] ?? true,
     );
   }
 }

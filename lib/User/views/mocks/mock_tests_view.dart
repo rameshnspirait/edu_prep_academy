@@ -30,10 +30,7 @@ class MockTestsView extends GetView<MockTestsController> {
         }
 
         if (controller.categoryTests.isEmpty) {
-          return _EmptyMockState(
-            isDark: isDark,
-            onRetry: controller.fetchMockTests,
-          );
+          return const Center(child: Text("No mock tests available"));
         }
 
         final categories = controller.categoryTests.keys.toList();
@@ -45,12 +42,12 @@ class MockTestsView extends GetView<MockTestsController> {
             controller: controller.scrollController, // ✅ ADDED
             padding: const EdgeInsets.all(16),
 
-            ///  UPDATED FOR PAGINATION
+            /// ✅ UPDATED FOR PAGINATION
             itemCount:
                 categories.length + (controller.isLoadingMore.value ? 1 : 0),
 
             itemBuilder: (context, index) {
-              ///  BOTTOM LOADER (ONLY ADDITION)
+              /// ✅ BOTTOM LOADER (ONLY ADDITION)
               if (index >= categories.length) {
                 return const Padding(
                   padding: EdgeInsets.all(16),
@@ -109,6 +106,20 @@ class MockTestsView extends GetView<MockTestsController> {
 
                         /// 🔥 IMPORTANT FIX
                         onTap: () {
+                          /// 💎 PREMIUM CASE
+                          if (!test["isFree"]) {
+                            _showSubscriptionBottomSheet(context);
+                            return;
+                          }
+
+                          /// 🔒 ATTEMPT LOCK
+                          if (test["isLocked"]) {
+                            _showLockedBottomSheet(context);
+                            return;
+                          }
+
+                          /// ✅ NORMAL
+
                           Get.toNamed(
                             AppRoutes.startTest,
                             arguments: {
@@ -133,119 +144,108 @@ class MockTestsView extends GetView<MockTestsController> {
     );
   }
 
-  String _formatCategory(String category) {
-    return category.replaceAll("_", " ");
-  }
+  void _showSubscriptionBottomSheet(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  DateTime _safeDate(dynamic value) {
-    if (value == null) return DateTime.now();
-    if (value is DateTime) return value;
-
-    try {
-      return value.toDate();
-    } catch (_) {
-      return DateTime.now();
-    }
-  }
-}
-
-class _EmptyMockState extends StatelessWidget {
-  final bool isDark;
-  final VoidCallback onRetry;
-
-  const _EmptyMockState({required this.isDark, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
+    final primaryColor = Colors.blueAccent;
     final textColor = isDark ? Colors.white : Colors.black87;
-    final subTextColor = isDark ? Colors.white60 : Colors.black54;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            /// ICON
-            Icon(Icons.quiz_outlined, size: 80, color: subTextColor),
-
-            const SizedBox(height: 20),
-
-            /// TITLE
-            Text(
-              "No Mock Tests Available",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: textColor,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            /// SUBTITLE
-            Text(
-              "New tests will appear here once added.\nStay tuned and keep practicing!",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: subTextColor, height: 1.5),
-            ),
-
-            const SizedBox(height: 20),
-
-            /// RETRY BUTTON
-            SizedBox(
-              height: 42,
-              child: OutlinedButton(
-                onPressed: onRetry,
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: isDark ? Colors.white30 : Colors.black26,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              /// DRAG HANDLE
+              Container(
+                width: 40,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.2)
+                      : Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text("Refresh"),
               ),
-            ),
-          ],
-        ),
-      ),
+
+              /// ICON
+              Icon(
+                Icons.workspace_premium_rounded,
+                size: 50,
+                color: primaryColor,
+              ),
+
+              const SizedBox(height: 12),
+
+              /// TITLE
+              Text(
+                "Premium Test",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              /// DESCRIPTION
+              Text(
+                "Unlock this mock test by subscribing.\nGet access to all premium tests.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: subTextColor),
+              ),
+
+              const SizedBox(height: 20),
+
+              /// BUTTON
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // Get.toNamed(AppRoutes.subscription);
+                  },
+                  child: const Text("Subscribe Now"),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Maybe Later"),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
-}
-
-//////////////////////////////////////////////////////////////////
-// TEST CARD (UNCHANGED UI)
-//////////////////////////////////////////////////////////////////
-
-class _TestCard extends StatelessWidget {
-  final String title;
-  final dynamic questions;
-  final String thumbnailUrl;
-  final bool isDark;
-  final bool isFree;
-  final int duration;
-  final DateTime uploadedAt;
-  final VoidCallback? onTap;
-  final bool isLocked;
-
-  const _TestCard({
-    required this.title,
-    required this.questions,
-    required this.thumbnailUrl,
-    required this.isDark,
-    required this.isFree,
-    required this.duration,
-    required this.uploadedAt,
-    required this.isLocked,
-    this.onTap,
-  });
 
   void _showLockedBottomSheet(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final primaryColor = isDark ? Colors.white : Colors.blueAccent;
+    final primaryColor = Colors.blueAccent;
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.white70 : Colors.black54;
     final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
@@ -298,7 +298,7 @@ class _TestCard extends StatelessWidget {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isDark ? primaryColor : Colors.blueAccent,
-                    foregroundColor: isDark ? Colors.black87 : Colors.white,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -314,139 +314,168 @@ class _TestCard extends StatelessWidget {
     );
   }
 
+  String _formatCategory(String category) {
+    return category.replaceAll("_", " ");
+  }
+
+  DateTime _safeDate(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+
+    try {
+      return value.toDate();
+    } catch (_) {
+      return DateTime.now();
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////
+// TEST CARD (UNCHANGED UI)
+//////////////////////////////////////////////////////////////////
+
+class _TestCard extends StatelessWidget {
+  final String title;
+  final dynamic questions;
+  final String thumbnailUrl;
+  final bool isDark;
+  final bool isFree;
+  final int duration;
+  final DateTime uploadedAt;
+  final VoidCallback? onTap;
+  final bool isLocked;
+
+  const _TestCard({
+    required this.title,
+    required this.questions,
+    required this.thumbnailUrl,
+    required this.isDark,
+    required this.isFree,
+    required this.duration,
+    required this.uploadedAt,
+    required this.isLocked,
+    this.onTap,
+  });
+
   @override
   Widget build(BuildContext context) {
     final questionText = "$questions Questions";
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          if (isLocked) {
-            _showLockedBottomSheet(context);
-          } else {
-            onTap?.call();
-          }
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withOpacity(0.4)
-                    : Colors.grey.withOpacity(0.18),
-                blurRadius: 14,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        thumbnailUrl.isEmpty
-                            ? "https://via.placeholder.com/300"
-                            : thumbnailUrl,
-                        fit: BoxFit.cover,
-                      ),
-
-                      /// FREE / PAID
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isFree ? Colors.green : Colors.orange,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            isFree ? "FREE" : "PAID",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      /// ✅ USE questionText HERE (FIX)
-                      Positioned(top: 8, right: 8, child: _chip(questionText)),
-
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: _chip("$duration min"),
-                      ),
-
-                      if (isLocked)
-                        Container(
-                          color: Colors.black.withOpacity(0.5),
-                          child: const Center(
-                            child: Icon(
-                              Icons.lock,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withOpacity(0.4)
+                  : Colors.grey.withOpacity(0.18),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-                child: Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  "Uploaded: ${uploadedAt.day}/${uploadedAt.month}/${uploadedAt.year}",
-                ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 38,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: isLocked
-                          ? Colors.black54
-                          : isDark
-                          ? Colors.white
-                          : Colors.white,
-                      backgroundColor: isLocked
-                          ? Colors.grey
-                          : AppColors.primaryBlue,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      thumbnailUrl.isEmpty
+                          ? "https://via.placeholder.com/300"
+                          : thumbnailUrl,
+                      fit: BoxFit.cover,
                     ),
-                    onPressed: isLocked ? null : onTap,
-                    child: Text(isLocked ? "Locked" : "Start Test"),
-                  ),
+
+                    /// FREE / PAID
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isFree ? Colors.green : Colors.orange,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          isFree ? "FREE" : "PREMIUM",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    /// ✅ USE questionText HERE (FIX)
+                    Positioned(top: 8, right: 8, child: _chip(questionText)),
+
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: _chip("$duration min"),
+                    ),
+
+                    if (isLocked)
+                      Container(
+                        color: Colors.black.withOpacity(0.5),
+                        child: const Center(
+                          child: Icon(
+                            Icons.lock,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+              child: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                "Uploaded: ${uploadedAt.day}/${uploadedAt.month}/${uploadedAt.year}",
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: SizedBox(
+                width: double.infinity,
+                height: 38,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: isLocked
+                        ? Colors.black45
+                        : isDark
+                        ? Colors.white
+                        : Colors.white,
+                    backgroundColor: isLocked
+                        ? Colors.grey
+                        : AppColors.primaryBlue,
+                  ),
+                  onPressed: onTap,
+                  child: Text(isLocked ? "Locked" : "Start Test"),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -474,6 +503,7 @@ Widget _chip(String text) {
 //////////////////////////////////////////////////////////////////
 // SHIMMER (UNCHANGED)
 //////////////////////////////////////////////////////////////////
+
 class _MockShimmer extends StatelessWidget {
   final bool isDark;
 

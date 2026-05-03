@@ -123,32 +123,138 @@ class StartTestView extends GetView<StartTestController> {
   }
 
   void _confirmQuit(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     Get.dialog(
-      AlertDialog(
-        title: const Text('Quit Test?'),
-        content: const Text('Your progress will be lost. Are you sure?'),
-        actions: [
-          TextButton(onPressed: Get.back, child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              Get.back(); // close dialog
-
-              /// reset only test controller
-              Get.delete<StartTestController>(force: true);
-
-              /// reload mock test controller
-              if (Get.isRegistered<MockTestsController>()) {
-                Get.find<MockTestsController>().fetchMockTests();
-              }
-
-              Get.back(); // go back
-            },
-
-            child: const Text('Quit'),
+      Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.5)
+                    : Colors.grey.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              /// 🔴 ICON
+              Container(
+                height: 60,
+                width: 60,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.exit_to_app_rounded,
+                  color: Colors.red,
+                  size: 30,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              /// TITLE
+              Text(
+                "Quit Test?",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              /// DESCRIPTION
+              Text(
+                "Your progress will be lost.\nAre you sure you want to quit?",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              /// ACTION BUTTONS
+              Row(
+                children: [
+                  /// CANCEL
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: Get.back,
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: isDark ? Colors.white24 : Colors.grey.shade300,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: Text(
+                        "Cancel",
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  /// QUIT BUTTON
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back();
+
+                        /// reset test controller
+                        Get.delete<StartTestController>(force: true);
+
+                        /// refresh mock tests
+                        if (Get.isRegistered<MockTestsController>()) {
+                          Get.find<MockTestsController>().fetchMockTests();
+                        }
+
+                        Get.back();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        "Quit",
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
+      barrierDismissible: false, // 🔥 Prevent accidental close
     );
   }
 }

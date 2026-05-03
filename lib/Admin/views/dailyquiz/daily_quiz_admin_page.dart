@@ -296,15 +296,4 @@ class AdminDailyQuizPage extends StatelessWidget {
   Widget _empty(String text) {
     return Center(child: Text(text));
   }
-
-  Widget _input(TextEditingController c, String hint, {bool isNumber = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: TextField(
-        controller: c,
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        decoration: InputDecoration(hintText: hint),
-      ),
-    );
-  }
 }
