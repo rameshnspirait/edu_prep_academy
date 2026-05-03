@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edu_prep_academy/User/controllers/dashboard_controller.dart';
 import 'package:edu_prep_academy/User/controllers/profile_controller.dart';
 import 'package:edu_prep_academy/User/controllers/start_test_controller.dart';
+import 'package:edu_prep_academy/User/core/DB/hive_service.dart';
 import 'package:edu_prep_academy/User/core/constants/app_colors.dart';
 import 'package:edu_prep_academy/User/routes/app_routes.dart';
 import 'package:edu_prep_academy/User/widgets/custom_alert_dialog.dart';
@@ -311,25 +312,54 @@ class AuthController extends GetxController with SingleGetTickerProviderMixin {
 
     if (!confirmed) return;
 
-    // 🔥 DELETE DASHBOARD CONTROLLER
-    if (Get.isRegistered<DashboardController>()) {
-      Get.delete<DashboardController>(force: true);
+    try {
+      final user = _auth.currentUser;
+
+      /// ================= CONTROLLERS CLEANUP =================
+      if (Get.isRegistered<DashboardController>()) {
+        Get.delete<DashboardController>(force: true);
+      }
+
+      if (Get.isRegistered<ProfileController>()) {
+        Get.delete<ProfileController>(force: true);
+      }
+
+      if (Get.isRegistered<StartTestController>()) {
+        Get.delete<StartTestController>(force: true);
+      }
+
+      /// ================= HIVE CLEANUP =================
+      if (user != null) {
+        final userId = user.uid;
+
+        /// 🔥 Clear PDFs
+        await HiveService.clearUserPdfs(userId);
+
+        // /// 🔥 Clear other user data (optional but recommended)
+        // await HiveService.clearAllUserData(userId);
+      }
+
+      /// ================= FIREBASE SIGN OUT =================
+      await _auth.signOut();
+
+      resetAuthFields();
+
+      /// ================= SUCCESS MESSAGE =================
+      CustomSnackbar.show(
+        title: 'Logged out',
+        message: 'You have been logged out successfully',
+        type: SnackbarType.info,
+      );
+
+      /// ================= NAVIGATION RESET =================
+      Get.offAllNamed(AppRoutes.login);
+    } catch (e) {
+      CustomSnackbar.show(
+        title: 'Error',
+        message: 'Logout failed. Please try again',
+        type: SnackbarType.error,
+      );
     }
-
-    Get.delete<ProfileController>(force: true);
-    Get.delete<StartTestController>(force: true);
-
-    await _auth.signOut();
-    resetAuthFields();
-
-    CustomSnackbar.show(
-      title: 'Logged out',
-      message: 'You have been logged out successfully',
-      type: SnackbarType.info,
-    );
-
-    // 🚀 Remove all routes
-    Get.offAllNamed(AppRoutes.login);
   }
 
   @override

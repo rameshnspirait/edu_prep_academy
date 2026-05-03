@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edu_prep_academy/User/core/DB/hive_service.dart';
 import 'package:edu_prep_academy/User/core/DB/pdf_download_service.dart';
 import 'package:edu_prep_academy/User/core/DB/pdf_model.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/note_model.dart';
 
@@ -90,8 +91,9 @@ class NotesController extends GetxController {
   final RxList<PdfModel> downloadedPdfs = <PdfModel>[].obs;
   final RxBool isDownloading = false.obs;
 
-  void loadPdfs(String userId) {
-    downloadedPdfs.assignAll(HiveService.getAllPdfs(userId));
+  Future<void> loadPdfs(String userId) async {
+    final pdfs = await HiveService.getAllPdfs(userId);
+    downloadedPdfs.assignAll(pdfs);
   }
 
   Future<void> downloadPdf({
@@ -101,7 +103,12 @@ class NotesController extends GetxController {
     required String userId,
   }) async {
     if (HiveService.isDownloaded(userId, id)) {
-      Get.snackbar("Already Downloaded", "Open from Downloads");
+      Get.snackbar(
+        "Already Downloaded",
+        "Open from Downloads",
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
       return;
     }
 
@@ -125,19 +132,37 @@ class NotesController extends GetxController {
       await HiveService.savePdf(userId, pdf);
       loadPdfs(userId);
 
-      Get.snackbar("Success", "PDF Downloaded");
+      Get.snackbar(
+        "Success",
+        "PDF Downloaded",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
     } else {
       Get.snackbar("Error", "Download failed");
     }
   }
 
-  void deletePdf(String id, String userId) async {
-    final pdf = HiveService.getPdf(userId, id);
+  Future<void> deletePdf(String id, String userId) async {
+    final pdf = await HiveService.getPdf(userId, id);
 
-    if (pdf != null) {
-      File(pdf.filePath).deleteSync();
+    if (pdf == null) return;
+
+    try {
+      final file = File(pdf.filePath);
+
+      /// 🔥 SAFE FILE DELETE
+      if (await file.exists()) {
+        await file.delete();
+      }
+
+      /// 🔥 REMOVE FROM HIVE
       await HiveService.deletePdf(userId, id);
-      loadPdfs(userId);
+
+      /// 🔥 RELOAD LIST
+      await loadPdfs(userId);
+    } catch (e) {
+      debugPrint("Delete PDF error: $e");
     }
   }
 }

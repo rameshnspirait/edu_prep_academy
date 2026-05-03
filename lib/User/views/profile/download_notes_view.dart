@@ -1,19 +1,30 @@
+import 'package:edu_prep_academy/User/controllers/download_notes_controller.dart';
 import 'package:edu_prep_academy/User/core/utils/app_utils.dart';
-import 'package:edu_prep_academy/User/core/DB/hive_service.dart';
 import 'package:edu_prep_academy/User/views/profile/pdf_view_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class DownloadedNotesView extends StatelessWidget {
+class DownloadedNotesView extends StatefulWidget {
   const DownloadedNotesView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // final isDark = Theme.of(context).brightness == Brightness.dark;
-    final userId = FirebaseAuth.instance.currentUser!.uid;
+  State<DownloadedNotesView> createState() => _DownloadedNotesViewState();
+}
 
-    final pdfs = HiveService.getAllPdfs(userId);
+class _DownloadedNotesViewState extends State<DownloadedNotesView> {
+  final controller = Get.put(DownloadedNotesController());
+
+  @override
+  void initState() {
+    super.initState();
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    controller.loadPdfs(userId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // final userId = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
       appBar: AppBar(
@@ -22,22 +33,28 @@ class DownloadedNotesView extends StatelessWidget {
         elevation: 8,
       ),
 
-      body: pdfs.isEmpty
-          ? _emptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: pdfs.length,
-              itemBuilder: (context, index) {
-                final pdf = pdfs[index];
+      body: Obx(() {
+        final pdfs = controller.downloadedPdfs;
 
-                return _PremiumPdfCard(
-                  pdf: pdf,
-                  onTap: () {
-                    Get.to(() => PdfViewerPage(filePath: pdf.filePath));
-                  },
-                );
+        if (pdfs.isEmpty) {
+          return _emptyState();
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: pdfs.length,
+          itemBuilder: (context, index) {
+            final pdf = pdfs[index];
+
+            return _PremiumPdfCard(
+              pdf: pdf,
+              onTap: () {
+                Get.to(() => PdfViewerPage(filePath: pdf.filePath));
               },
-            ),
+            );
+          },
+        );
+      }),
     );
   }
 

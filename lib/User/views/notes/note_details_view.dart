@@ -165,7 +165,12 @@ class _NoteDetailViewState extends State<NoteDetailView> {
                     ),
                     onPressed: () async {
                       if (_isDownloaded) {
-                        Get.snackbar("Downloaded", "Already available offline");
+                        Get.snackbar(
+                          "Downloaded",
+                          "Already available offline",
+                          backgroundColor: Colors.orange,
+                          colorText: Colors.white,
+                        );
                         return;
                       }
 
@@ -200,9 +205,19 @@ class _NoteDetailViewState extends State<NoteDetailView> {
                           _isDownloaded = true;
                         });
 
-                        Get.snackbar("Success", "PDF saved for offline use");
+                        Get.snackbar(
+                          "Success",
+                          "PDF saved for offline use",
+                          backgroundColor: Colors.green,
+                          colorText: Colors.white,
+                        );
                       } catch (e) {
-                        Get.snackbar("Error", "Download failed");
+                        Get.snackbar(
+                          "Error",
+                          "Download failed",
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
                       } finally {
                         setState(() => _isLoading = false);
                       }
