@@ -4,6 +4,7 @@ import 'package:edu_prep_academy/User/core/constants/app_colors.dart';
 import 'package:edu_prep_academy/User/core/constants/app_strings.dart';
 import 'package:edu_prep_academy/User/core/theme/theme_controller.dart';
 import 'package:edu_prep_academy/User/routes/app_routes.dart';
+import 'package:edu_prep_academy/User/views/profile/my_test_attempt_view.dart';
 import 'package:edu_prep_academy/User/views/profile/widget/profile_shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -131,11 +132,12 @@ class ProfileView extends GetView<ProfileController> {
                       subtitle: "Score, accuracy & rank",
                       onTap: () => Get.toNamed(AppRoutes.performance),
                     ),
-                    _card(
-                      icon: Icons.assignment_turned_in_outlined,
-                      title: "My Test Attempts",
-                      subtitle: "Previous mock results",
-                    ),
+                    // _card(
+                    //   icon: Icons.assignment_turned_in_outlined,
+                    //   title: "My Test Attempts",
+                    //   subtitle: "Previous mock results",
+                    //   onTap: () => Get.to(() => MyTestAttemptView()),
+                    // ),
                     _card(
                       icon: Icons.picture_as_pdf_outlined,
                       title: "Downloaded Notes",

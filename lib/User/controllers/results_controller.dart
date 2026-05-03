@@ -9,6 +9,7 @@ class ResultsController extends GetxController {
   final RxBool isLoading = true.obs;
   final RxString error = ''.obs;
 
+  /// category -> list of tests
   final RxMap<String, List<Map<String, dynamic>>> results =
       <String, List<Map<String, dynamic>>>{}.obs;
 
@@ -32,28 +33,29 @@ class ResultsController extends GetxController {
       error.value = '';
       results.clear();
 
-      ///  LOAD ALL TESTS
+      /// ================= LOAD ALL TESTS =================
       final Map<String, Map<String, dynamic>> tests = {};
 
-      final mainSnap = await _firestore.collection('mock_tests').get();
+      final categoriesSnap = await _firestore.collection('mock_tests').get();
 
-      for (final mainDoc in mainSnap.docs) {
-        final subSnap = await mainDoc.reference.collection('tests').get();
+      for (final categoryDoc in categoriesSnap.docs) {
+        final subTests = await categoryDoc.reference.collection('tests').get();
 
-        for (final testDoc in subSnap.docs) {
+        for (final testDoc in subTests.docs) {
           tests[testDoc.id] = {
             ...testDoc.data(),
             "testId": testDoc.id,
-            "category": mainDoc.id, // SSC_GD
+            "category": categoryDoc.id,
           };
         }
       }
 
-      /// ✅ LOAD USER ATTEMPTS
+      /// ================= LOAD USER ATTEMPTS =================
       final attemptSnap = await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('mock_attempts')
+          .orderBy('updatedAt', descending: true)
           .get();
 
       if (attemptSnap.docs.isEmpty) {
@@ -61,41 +63,37 @@ class ResultsController extends GetxController {
         return;
       }
 
+      /// ================= CACHE ALL USERS ONCE =================
+      final allUsers = await _firestore.collection('users').get();
+
       for (final doc in attemptSnap.docs) {
         final attempt = doc.data();
+        final String testId = attempt['testId'];
 
-        /// 🔥 IMPORTANT FIX HERE
-        final String testId = attempt['testId'] ?? doc.id; // fallback safety
-
-        if (!tests.containsKey(testId)) {
-          print("❌ Test not found for testId: $testId");
-          continue;
-        }
+        if (!tests.containsKey(testId)) continue;
 
         final test = tests[testId]!;
 
-        final int bestScore = (attempt['bestScore'] ?? 0).toInt();
+        final int userScore = (attempt['lastScore'] ?? 0).toInt();
 
-        /// 🔥 RANK CALCULATION (FIXED)
+        /// ================= RANK CALCULATION (OPTIMIZED) =================
         int rank = 1;
         int totalStudents = 0;
 
-        final usersSnap = await _firestore.collection('users').get();
-
-        for (final userDoc in usersSnap.docs) {
-          final attemptDoc = await userDoc.reference
+        for (final userDoc in allUsers.docs) {
+          final snap = await userDoc.reference
               .collection('mock_attempts')
               .where('testId', isEqualTo: testId)
               .limit(1)
               .get();
 
-          if (attemptDoc.docs.isNotEmpty) {
+          if (snap.docs.isNotEmpty) {
             totalStudents++;
 
-            final score = (attemptDoc.docs.first.data()['bestScore'] ?? 0)
+            final otherScore = (snap.docs.first.data()['lastScore'] ?? 0)
                 .toInt();
 
-            if (score > bestScore) {
+            if (otherScore > userScore) {
               rank++;
             }
           }
@@ -105,30 +103,38 @@ class ResultsController extends GetxController {
             ? ((totalStudents - rank) / totalStudents) * 100
             : 100;
 
+        /// ================= FINAL DATA =================
         final resultItem = {
           "testId": testId,
-          "testName": test['title'] ?? 'Mock Test',
-          "obtainedMarks": (attempt['bestObtainedMarks'] ?? 0).toInt(),
-          "totalMarks": (attempt['bestTotalMarks'] ?? test['totalMarks'] ?? 1)
-              .toInt(),
-          "accuracy": (attempt['bestAccuracy'] ?? 0).toInt(),
-          "totalQuestions": (attempt['totalQuestions'] ?? 1).toInt(),
-          "correctAnswered": (attempt['correctAnswered'] ?? 0).toInt(),
-          "attempts": (attempt['attemptCount'] ?? 1).toInt(),
-          "status": attempt['status'] ?? 'UNKNOWN',
+          "testName": attempt['testTitle'] ?? test['title'],
+          "category": test['category'],
+
+          /// 🔥 IMPORTANT FIXED FIELDS
+          "obtainedMarks": (attempt['correct'] ?? 0),
+          "totalMarks": (attempt['totalQuestions'] ?? 1),
+
+          "accuracy": (attempt['lastAccuracy'] ?? 0).toDouble(),
+          "totalQuestions": (attempt['totalQuestions'] ?? 1),
+          "correctAnswered": (attempt['correct'] ?? 0),
+
+          "attempts": (attempt['attemptCount'] ?? 1),
+          "timeTaken": (attempt['timeTaken'] ?? 0),
+
           "date": attempt['updatedAt'],
+
           "rank": rank,
           "percentile": percentile,
           "totalStudents": totalStudents,
         };
 
-        final groupKey = test['title'] ?? 'Mock Test';
+        /// ================= GROUP BY CATEGORY =================
+        final String category = test['category'] ?? "General";
 
-        results.putIfAbsent(groupKey, () => []);
-        results[groupKey]!.add(resultItem);
+        results.putIfAbsent(category, () => []);
+        results[category]!.add(resultItem);
       }
 
-      /// ✅ SORT
+      /// ================= SORT BY DATE =================
       results.forEach((key, value) {
         value.sort((a, b) {
           final aDate = a['date'] as Timestamp?;
@@ -138,7 +144,7 @@ class ResultsController extends GetxController {
       });
 
       if (results.isEmpty) {
-        error.value = "No data mapped (check testId mapping)";
+        error.value = "No mapped data found";
       }
     } catch (e) {
       error.value = "Error: $e";

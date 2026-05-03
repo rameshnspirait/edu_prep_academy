@@ -2,6 +2,7 @@ import 'package:edu_prep_academy/User/controllers/results_controller.dart';
 import 'package:edu_prep_academy/User/core/constants/app_colors.dart';
 import 'package:edu_prep_academy/User/core/theme/app_text_style.dart';
 import 'package:edu_prep_academy/User/core/theme/theme_controller.dart';
+import 'package:edu_prep_academy/User/views/results/analytics_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
@@ -225,6 +226,52 @@ class _ResultsShimmer extends StatelessWidget {
   }
 }
 
+List<Widget> _buildBadges(Map data) {
+  List<Widget> badges = [];
+
+  final accuracy = (data['accuracy'] ?? 0).toDouble();
+  final time = (data['timeTaken'] ?? 0);
+  final attempts = (data['attempts'] ?? 1);
+  final rank = (data['rank'] ?? 999);
+
+  /// 🥇 TOPPER
+  if (rank == 1) {
+    badges.add(_badge("🥇 Topper", Colors.amber));
+  }
+
+  /// 🎯 HIGH ACCURACY
+  if (accuracy >= 80) {
+    badges.add(_badge("🎯 Accurate", Colors.green));
+  }
+
+  /// ⚡ FAST SOLVER (example < 30 sec)
+  if (time > 0 && time < 30) {
+    badges.add(_badge("⚡ Fast", Colors.blue));
+  }
+
+  /// 🔁 CONSISTENT
+  if (attempts >= 3) {
+    badges.add(_badge("🔥 Consistent", Colors.deepPurple));
+  }
+
+  return badges;
+}
+
+Widget _badge(String text, Color color) {
+  return Container(
+    margin: const EdgeInsets.only(right: 6, top: 6),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.12),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+    ),
+  );
+}
+
 //////////////////////////////////////////////////////////////////
 // REMAINING CODE (UNCHANGED)
 //////////////////////////////////////////////////////////////////
@@ -273,37 +320,48 @@ class _TestResultCard extends StatelessWidget {
         ? 0.0
         : obtainedMarks / totalMarks;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            data['testName'] ?? 'Mock Test',
-            style: AppTextStyles.headingSmall(
-              context,
-            ).copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          LinearProgressIndicator(value: percentScore),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _StatText("Score", "$obtainedMarks / $totalMarks"),
-              _StatText(
-                "Accuracy",
-                "${(percentScore * 100).toStringAsFixed(1)}%",
-              ),
-              _StatText("Attempts", "$attempts"),
-            ],
-          ),
-        ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () {
+        Get.to(() => AnalyticsPage(testId: data['testId']));
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              data['testName'] ?? 'Mock Test',
+              style: AppTextStyles.headingSmall(
+                context,
+              ).copyWith(fontWeight: FontWeight.bold),
+            ),
+
+            /// 🔥 BADGES HERE
+            const SizedBox(height: 6),
+            Wrap(children: _buildBadges(data)),
+
+            const SizedBox(height: 10),
+            LinearProgressIndicator(value: percentScore),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _StatText("Score", "$obtainedMarks / $totalMarks"),
+                _StatText(
+                  "Accuracy",
+                  "${(percentScore * 100).toStringAsFixed(1)}%",
+                ),
+                _StatText("Attempts", "$attempts"),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
