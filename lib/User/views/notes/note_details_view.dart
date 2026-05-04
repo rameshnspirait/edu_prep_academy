@@ -22,7 +22,6 @@ class NoteDetailView extends StatefulWidget {
 class _NoteDetailViewState extends State<NoteDetailView> {
   final PdfViewerController _pdfController = PdfViewerController();
   final String userId = FirebaseAuth.instance.currentUser!.uid;
-
   bool _isDownloaded = false;
   bool _isLoading = true;
   bool _focusMode = false;
