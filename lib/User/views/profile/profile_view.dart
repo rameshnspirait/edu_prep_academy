@@ -5,6 +5,7 @@ import 'package:edu_prep_academy/User/core/constants/app_strings.dart';
 import 'package:edu_prep_academy/User/core/theme/theme_controller.dart';
 import 'package:edu_prep_academy/User/routes/app_routes.dart';
 import 'package:edu_prep_academy/User/views/profile/download_notes_view.dart';
+import 'package:edu_prep_academy/User/views/profile/feedback_view.dart';
 import 'package:edu_prep_academy/User/views/profile/help_support_view.dart';
 import 'package:edu_prep_academy/User/views/profile/widget/profile_shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -189,7 +190,7 @@ class ProfileView extends StatelessWidget {
                       icon: Icons.feedback_outlined,
                       title: "Feedback",
                       subtitle: "Help us improve",
-                      // onTap: () => Get.toNamed(AppRoutes.feedback),
+                      onTap: () => Get.to(() => FeedbackView()),
                     ),
                     _card(
                       icon: Icons.share_outlined,
