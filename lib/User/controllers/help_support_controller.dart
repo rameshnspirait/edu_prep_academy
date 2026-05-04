@@ -1,9 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edu_prep_academy/User/routes/app_routes.dart';
-import 'package:edu_prep_academy/User/views/profile/help_support_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 class HelpSupportController extends GetxController {
@@ -11,7 +9,7 @@ class HelpSupportController extends GetxController {
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
   final RxList<Map<String, dynamic>> tickets = <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, String>> faqs = <Map<String, String>>[].obs;
+  final faqs = <Map<String, dynamic>>[].obs;
   final RxList<Map<String, dynamic>> userTickets = <Map<String, dynamic>>[].obs;
 
   /// ================= STATE =================
@@ -26,7 +24,7 @@ class HelpSupportController extends GetxController {
 
   @override
   void onInit() {
-    loadDummyFaqs();
+    fetchFaqs();
     loadConfig();
     fetchUserTickets();
     super.onInit();
@@ -129,60 +127,41 @@ class HelpSupportController extends GetxController {
       ///  NAVIGATE BACK (Help & Support)
       Get.offAndToNamed(AppRoutes.helpSupport);
     } catch (e) {
-      // Get.snackbar(
-      //   "Error",
-      //   "Failed to submit ticket",
-      //   backgroundColor: Colors.red,
-      //   colorText: Colors.white,
-      // );
     } finally {
       isLoading.value = false;
     }
   }
 
-  void loadDummyFaqs() {
-    isLoading.value = true;
+  Future<void> fetchFaqs() async {
+    try {
+      isLoading.value = true;
 
-    faqs.assignAll([
-      {
-        "question": "How do I reset my password?",
-        "answer":
-            "Go to Login screen → click Forgot Password → enter registered mobile number → verify OTP → set new password.",
-        "category": "Account",
-      },
-      {
-        "question": "How to download notes for offline use?",
-        "answer":
-            "Open any PDF note → click download icon → it will be saved in 'Downloaded Notes' section.",
-        "category": "Downloads",
-      },
-      {
-        "question": "Why is my mock test locked?",
-        "answer":
-            "Some tests are premium. You need subscription or admin access to unlock them.",
-        "category": "Tests",
-      },
-      {
-        "question": "How is my rank calculated?",
-        "answer":
-            "Rank is calculated based on accuracy, speed, and overall test performance compared with other users.",
-        "category": "Performance",
-      },
-      {
-        "question": "How to change app theme?",
-        "answer":
-            "Go to Profile → Toggle Dark Mode switch → theme will change instantly.",
-        "category": "App Settings",
-      },
-      {
-        "question": "Can I retake a mock test?",
-        "answer":
-            "Yes, but some tests have attempt limits (usually 3 attempts per 24 hours).",
-        "category": "Tests",
-      },
-    ]);
+      final snapshot = await FirebaseFirestore.instance
+          .collection('help_support')
+          .doc('faq')
+          .collection('items')
+          .orderBy('createdAt', descending: false)
+          .get();
 
-    isLoading.value = false;
+      faqs.value = snapshot.docs.map((doc) {
+        final data = doc.data();
+
+        return {
+          "id": doc.id,
+          "question": data['question'] ?? '',
+          "answer": data['answer'] ?? '',
+          "category": data['category'] ?? 'General',
+        };
+      }).toList();
+    } catch (e) {
+      Get.snackbar(
+        "Error",
+        "Failed to load FAQs",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   /// ================= STATE =================

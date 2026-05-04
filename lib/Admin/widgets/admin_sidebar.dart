@@ -84,6 +84,7 @@ class AdminSidebar extends StatelessWidget {
             _menuItem(Icons.menu_book, "Notes", 1, isOpen),
             _menuItem(Icons.quiz, "Mock Tests", 2, isOpen),
             _menuItem(Icons.quiz, "Daily Quiz", 3, isOpen),
+            _menuItem(Icons.help_outline, "FAQ", 4, isOpen),
 
             const Spacer(),
 
