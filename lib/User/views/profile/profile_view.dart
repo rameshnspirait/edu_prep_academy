@@ -8,7 +8,6 @@ import 'package:edu_prep_academy/User/views/profile/download_notes_view.dart';
 import 'package:edu_prep_academy/User/views/profile/feedback_view.dart';
 import 'package:edu_prep_academy/User/views/profile/help_support_view.dart';
 import 'package:edu_prep_academy/User/views/profile/widget/profile_shimmer.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -17,7 +16,6 @@ class ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
     final themeCtrl = Get.find<ThemeController>();
     final authCtrl = Get.find<AuthController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
