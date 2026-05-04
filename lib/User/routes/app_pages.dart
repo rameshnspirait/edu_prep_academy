@@ -26,7 +26,7 @@ class AppPages {
   static final routes = <GetPage>[
     GetPage(
       name: AppRoutes.login,
-      page: () => LoginView(),
+      page: () => AuthView(),
       binding: InitialBinding(),
       transition: Transition.fadeIn,
     ),

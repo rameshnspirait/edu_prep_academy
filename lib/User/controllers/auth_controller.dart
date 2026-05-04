@@ -1,372 +1,185 @@
-import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:edu_prep_academy/User/controllers/dashboard_controller.dart';
-import 'package:edu_prep_academy/User/controllers/profile_controller.dart';
-import 'package:edu_prep_academy/User/controllers/start_test_controller.dart';
-import 'package:edu_prep_academy/User/core/DB/hive_service.dart';
-import 'package:edu_prep_academy/User/core/constants/app_colors.dart';
-import 'package:edu_prep_academy/User/routes/app_routes.dart';
-import 'package:edu_prep_academy/User/widgets/custom_alert_dialog.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:edu_prep_academy/User/widgets/custom_snackbar.dart';
+import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class AuthController extends GetxController with SingleGetTickerProviderMixin {
+class AuthController extends GetxController {
+  /// ---------------- INSTANCES ----------------
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// ---------------- TEXT CONTROLLERS ----------------
-  final phoneController = TextEditingController();
-  final otpController = TextEditingController();
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
 
-  /// ---------------- STATE ----------------
-  final isLoading = false.obs;
-  final verificationId = ''.obs;
+  /// ---------------- STATES ----------------
+  var isLoading = false.obs;
+  var isLoginMode = true.obs;
 
-  /// ---------------- OTP RESEND TIMER ----------------
-  final otpTimer = 30.obs;
-  final canResendOtp = false.obs;
-  Timer? _resendTimer;
+  var name = "".obs;
+  var email = "".obs;
 
-  /// ---------------- OTP FAILURE & LOCK ----------------
-  final otpFailures = 0.obs;
-  final isOtpLocked = false.obs;
-  final otpLockTimer = 0.obs;
-  Timer? _lockTimer;
+  // var totalTests = 0.obs;
+  // var accuracy = 0.0.obs;
+  // var userRank = 0.obs;
 
-  /// ---------------- SHAKE ANIMATION ----------------
-  late AnimationController shakeController;
-  late Animation<double> shakeAnimation;
+  /// ---------------- SWITCH MODE ----------------
+  void toggleAuthMode() {
+    isLoginMode.value = !isLoginMode.value;
+    clearFields();
+  }
+
+  void clearFields() {
+    nameController.clear();
+    emailController.clear();
+    passwordController.clear();
+  }
 
   @override
   void onInit() {
     super.onInit();
-    shakeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-
-    shakeAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0, end: -1), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -1, end: 1), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 1, end: 0), weight: 1),
-    ]).animate(shakeController);
+    fetchUserData();
   }
 
-  /// ---------------- SEND OTP ----------------
-  Future<void> sendOtp() async {
-    await FirebaseAuth.instance.setSettings(
-      appVerificationDisabledForTesting: true,
-    );
-
-    final phone = phoneController.text.trim();
-
-    /// ❌ EMPTY
-    if (phone.isEmpty) {
-      CustomSnackbar.show(
-        title: 'Error',
-        message: 'Please enter your mobile number',
-        type: SnackbarType.error,
-      );
-      return;
-    }
-
-    /// ❌ INVALID LENGTH
-    if (phone.length != 10) {
-      CustomSnackbar.show(
-        title: 'Invalid Number',
-        message: 'Mobile number must be 10 digits',
-        type: SnackbarType.warning,
-      );
-      return;
-    }
-
-    isLoading.value = true;
-
+  Future<void> fetchUserData() async {
     try {
-      await _auth.verifyPhoneNumber(
-        phoneNumber: '+91$phone',
-        timeout: const Duration(seconds: 30),
+      isLoading.value = true;
 
-        /// AUTO VERIFY
-        verificationCompleted: (credential) async {
-          await _auth.signInWithCredential(credential);
-        },
+      final uid = FirebaseAuth.instance.currentUser!.uid;
 
-        /// FIREBASE ERRORS
-        verificationFailed: (FirebaseAuthException e) {
-          isLoading.value = false;
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
 
-          String message = 'OTP verification failed';
-
-          if (e.code == 'invalid-phone-number') {
-            message = 'Invalid mobile number';
-          } else if (e.code == 'too-many-requests') {
-            message = 'Too many attempts. Try again later';
-          } else if (e.message != null) {
-            message = e.message!;
-          }
-
-          CustomSnackbar.show(
-            title: 'Error',
-            message: message,
-            type: SnackbarType.error,
-          );
-        },
-
-        /// OTP SENT
-        codeSent: (id, _) {
-          verificationId.value = id;
-          startResendTimer();
-          isLoading.value = false;
-
-          CustomSnackbar.show(
-            title: 'OTP Sent',
-            message: 'OTP has been sent to your mobile number',
-            type: SnackbarType.success,
-          );
-        },
-
-        codeAutoRetrievalTimeout: (_) {},
-      );
-    } catch (_) {
+      if (doc.exists) {
+        name.value = doc['name'] ?? "User";
+        email.value = doc['email'] ?? "";
+      }
+    } catch (e) {
+      Get.snackbar("Error", "Failed to load profile");
+    } finally {
       isLoading.value = false;
-      CustomSnackbar.show(
-        title: 'Error',
-        message: 'Something went wrong. Please try again',
-        type: SnackbarType.error,
-      );
     }
   }
 
-  /// ---------------- VERIFY OTP ----------------
-  Future<void> verifyOtp() async {
-    if (isOtpLocked.value) {
-      CustomSnackbar.show(
-        title: 'OTP Locked',
-        message: 'Try again in ${otpLockTimer.value}s',
-        type: SnackbarType.warning,
-      );
-      return;
-    }
-
-    if (otpController.text.length != 6) {
-      onOtpError();
+  /// ---------------- EMAIL AUTH ----------------
+  Future<void> submit() async {
+    if (emailController.text.isEmpty ||
+        passwordController.text.isEmpty ||
+        (!isLoginMode.value && nameController.text.isEmpty)) {
+      Get.snackbar("Error", "Please fill all fields");
       return;
     }
 
     try {
       isLoading.value = true;
 
-      final credential = PhoneAuthProvider.credential(
-        verificationId: verificationId.value,
-        smsCode: otpController.text,
-      );
+      if (isLoginMode.value) {
+        /// LOGIN
+        await _auth.signInWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+        );
 
-      // ✅ Sign in user
-      final userCredential = await _auth.signInWithCredential(credential);
-
-      final user = userCredential.user;
-      if (user == null) return;
-
-      // ✅ Save user to Firestore
-      await _saveUserToFirestore(user);
-
-      /// SUCCESS
-      otpFailures.value = 0;
-      isOtpLocked.value = false;
-      otpController.clear();
-
-      CustomSnackbar.show(
-        title: 'Success',
-        message: 'OTP verified successfully',
-        type: SnackbarType.success,
-      );
-
-      //  Fetch user role from Firestore
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final role = userDoc.data()?['role'] ?? 'student';
-
-      //  ROLE BASED NAVIGATION
-      if (role == 'admin') {
-        Get.offAllNamed(AppRoutes.adminHome);
+        Get.snackbar("Success", "Login Successful");
       } else {
-        Get.offAllNamed(AppRoutes.dashboard);
+        /// REGISTER
+        final userCred = await _auth.createUserWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+        );
+
+        final user = userCred.user!;
+
+        /// Save in Firestore
+        await _firestore.collection('users').doc(user.uid).set({
+          "name": nameController.text.trim(),
+          "email": emailController.text.trim(),
+          "role": "student",
+          "coins": 0,
+          "createdAt": DateTime.now(),
+        });
+
+        Get.snackbar("Success", "Account Created");
       }
-    } on FirebaseAuthException {
-      onOtpError();
+
+      Get.offAllNamed('/dashboard');
+    } on FirebaseAuthException catch (e) {
+      Get.snackbar("Error", e.message ?? "Auth Failed");
     } finally {
       isLoading.value = false;
     }
   }
 
-  ///Save Users data to firebase firestore
-  Future<void> _saveUserToFirestore(User user) async {
-    final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+  /// ---------------- GOOGLE SIGN IN ----------------
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-    final docSnap = await docRef.get();
+  Future<void> signInWithGoogle() async {
+    try {
+      isLoading.value = true;
 
-    if (!docSnap.exists) {
-      await docRef.set({
-        'uid': user.uid,
-        'phone': user.phoneNumber,
-        'role': 'student',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-    }
-  }
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
-  /// ---------------- OTP ERROR ----------------
-  void onOtpError() {
-    otpFailures.value++;
+      if (googleUser == null) return;
 
-    /// 🔊 HAPTIC
-    HapticFeedback.heavyImpact();
+      final googleAuth = await googleUser.authentication;
 
-    /// 🔁 SHAKE
-    shakeController.forward(from: 0);
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
 
-    /// 🔄 CLEAR
-    otpController.clear();
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
 
-    CustomSnackbar.show(
-      title: 'Invalid OTP',
-      message: 'Please enter the correct OTP',
-      type: SnackbarType.error,
-    );
+      final user = userCredential.user!;
 
-    /// 🔒 LOCK AFTER 3 FAILURES
-    if (otpFailures.value >= 3) {
-      lockOtp();
-    }
-  }
+      /// Save user
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
-  /// ---------------- LOCK OTP ----------------
-  void lockOtp() {
-    isOtpLocked.value = true;
-    otpLockTimer.value = 30;
-
-    CustomSnackbar.show(
-      title: 'OTP Locked',
-      message: 'Too many failed attempts. Try again in 30 seconds',
-      type: SnackbarType.warning,
-    );
-
-    _lockTimer?.cancel();
-    _lockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      otpLockTimer.value--;
-
-      if (otpLockTimer.value <= 0) {
-        timer.cancel();
-        isOtpLocked.value = false;
-        otpFailures.value = 0;
+      if (!doc.exists) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          "name": user.displayName ?? "",
+          "email": user.email,
+          "role": "student",
+          "coins": 0,
+          "createdAt": DateTime.now(),
+        });
       }
-    });
-  }
 
-  /// ---------------- RESEND TIMER ----------------
-  void startResendTimer() {
-    otpTimer.value = 30;
-    canResendOtp.value = false;
-
-    _resendTimer?.cancel();
-    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      otpTimer.value--;
-      if (otpTimer.value == 0) {
-        timer.cancel();
-        canResendOtp.value = true;
-      }
-    });
-  }
-
-  /// ---------------- RESEND OTP ----------------
-  void resendOtp() {
-    if (!canResendOtp.value) return;
-    sendOtp();
-  }
-
-  /// ---------------- RESET ----------------
-  void resetAuthFields() {
-    phoneController.clear();
-    otpController.clear();
-    verificationId.value = '';
-    otpFailures.value = 0;
-    isOtpLocked.value = false;
-    otpLockTimer.value = 0;
+      Get.offAllNamed('/dashboard');
+    } catch (e) {
+      Get.snackbar("Error", e.toString());
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   /// ---------------- LOGOUT ----------------
+
   Future<void> logout() async {
-    final confirmed = await CustomAlertDialog.showConfirmation(
-      confirmColor: AppColors.errorRed,
-      title: 'Confirm Logout',
-      message: 'Are you sure you want to logout?',
-      confirmText: 'Yes',
-      cancelText: 'No',
-    );
-
-    if (!confirmed) return;
-
     try {
-      final user = _auth.currentUser;
+      isLoading.value = true;
 
-      /// ================= CONTROLLERS CLEANUP =================
-      if (Get.isRegistered<DashboardController>()) {
-        Get.delete<DashboardController>(force: true);
-      }
-
-      if (Get.isRegistered<ProfileController>()) {
-        Get.delete<ProfileController>(force: true);
-      }
-
-      if (Get.isRegistered<StartTestController>()) {
-        Get.delete<StartTestController>(force: true);
-      }
-
-      /// ================= HIVE CLEANUP =================
-      if (user != null) {
-        final userId = user.uid;
-
-        /// 🔥 Clear PDFs
-        await HiveService.clearUserPdfs(userId);
-
-        // /// 🔥 Clear other user data (optional but recommended)
-        // await HiveService.clearAllUserData(userId);
-      }
-
-      /// ================= FIREBASE SIGN OUT =================
       await _auth.signOut();
 
-      resetAuthFields();
+      /// SAFE GOOGLE LOGOUT
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.signOut();
+      }
 
-      /// ================= SUCCESS MESSAGE =================
-      CustomSnackbar.show(
-        title: 'Logged out',
-        message: 'You have been logged out successfully',
-        type: SnackbarType.info,
-      );
-
-      /// ================= NAVIGATION RESET =================
-      Get.offAllNamed(AppRoutes.login);
+      Get.offAllNamed('/login');
     } catch (e) {
-      CustomSnackbar.show(
-        title: 'Error',
-        message: 'Logout failed. Please try again',
-        type: SnackbarType.error,
-      );
+      Get.snackbar("Error", e.toString());
+    } finally {
+      isLoading.value = false;
     }
-  }
-
-  @override
-  void onClose() {
-    shakeController.dispose();
-    _resendTimer?.cancel();
-    _lockTimer?.cancel();
-    super.onClose();
   }
 }

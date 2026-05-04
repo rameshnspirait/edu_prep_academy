@@ -23,14 +23,14 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        /// ❌ NOT LOGGED IN
+        ///  NOT LOGGED IN
         if (!authSnapshot.hasData) {
-          return LoginView();
+          return AuthView();
         }
 
         final user = authSnapshot.data!;
 
-        /// 🔥 STEP 1: FETCH USER ROLE
+        ///  STEP 1: FETCH USER ROLE
         return FutureBuilder<DocumentSnapshot>(
           future: FirebaseFirestore.instance
               .collection('users')
@@ -50,7 +50,7 @@ class AuthWrapper extends StatelessWidget {
             final data = userSnapshot.data!.data() as Map<String, dynamic>;
             final role = data['role'] ?? 'student';
 
-            /// 🔥 STEP 2: OPEN HIVE USER BOX
+            ///  STEP 2: OPEN HIVE USER BOX
             return FutureBuilder(
               future: HiveService.openUserBox(user.uid),
               builder: (context, hiveSnapshot) {
@@ -58,7 +58,7 @@ class AuthWrapper extends StatelessWidget {
                   return const Scaffold(body: HomeShimmer());
                 }
 
-                /// 🎯 STEP 3: ROLE BASED NAVIGATION
+                ///  STEP 3: ROLE BASED NAVIGATION
                 if (role == 'admin') {
                   AdminBinding().dependencies();
                   return const AdminHomePage();
