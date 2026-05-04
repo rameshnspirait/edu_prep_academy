@@ -5,12 +5,13 @@ import 'package:edu_prep_academy/User/core/constants/app_strings.dart';
 import 'package:edu_prep_academy/User/core/theme/theme_controller.dart';
 import 'package:edu_prep_academy/User/routes/app_routes.dart';
 import 'package:edu_prep_academy/User/views/profile/download_notes_view.dart';
+import 'package:edu_prep_academy/User/views/profile/help_support_view.dart';
 import 'package:edu_prep_academy/User/views/profile/widget/profile_shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class ProfileView extends GetView<ProfileController> {
+class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
 
   @override
@@ -19,6 +20,7 @@ class ProfileView extends GetView<ProfileController> {
     final themeCtrl = Get.find<ThemeController>();
     final authCtrl = Get.find<AuthController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final controller = Get.put(ProfileController());
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -132,12 +134,7 @@ class ProfileView extends GetView<ProfileController> {
                       subtitle: "Score, accuracy & rank",
                       onTap: () => Get.toNamed(AppRoutes.performance),
                     ),
-                    // _card(
-                    //   icon: Icons.assignment_turned_in_outlined,
-                    //   title: "My Test Attempts",
-                    //   subtitle: "Previous mock results",
-                    //   onTap: () => Get.to(() => MyTestAttemptView()),
-                    // ),
+
                     _card(
                       icon: Icons.picture_as_pdf_outlined,
                       title: "Downloaded Notes",
@@ -186,7 +183,7 @@ class ProfileView extends GetView<ProfileController> {
                       icon: Icons.help_outline,
                       title: "Help & Support",
                       subtitle: "FAQs & contact",
-                      // onTap: () => Get.toNamed(AppRoutes.helpSupport),
+                      onTap: () => Get.to(() => HelpSupportView()),
                     ),
                     _card(
                       icon: Icons.feedback_outlined,
