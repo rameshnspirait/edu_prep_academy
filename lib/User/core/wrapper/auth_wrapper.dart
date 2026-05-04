@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:edu_prep_academy/Admin/bindings/admin_binding.dart';
 import 'package:edu_prep_academy/Admin/views/home/admin_home_page.dart';
 import 'package:edu_prep_academy/User/core/DB/hive_service.dart';
-import 'package:edu_prep_academy/User/views/auth/login_view.dart';
+import 'package:edu_prep_academy/User/views/auth/auth_view.dart';
 import 'package:edu_prep_academy/User/views/dashbaord/dashboard_view.dart';
 import 'package:edu_prep_academy/User/views/home/home_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';

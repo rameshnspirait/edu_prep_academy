@@ -12,7 +12,20 @@
           "package_name": "com.examsolving.eduprepacademy.android"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "600079573284-96hhtmr2uitnht1qq853j9gg7326tmnm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.examsolving.eduprepacademy.android",
+            "certificate_hash": "4af51b26670af808f36b5709c4eea81941f1c4ab"
+          }
+        },
+        {
+          "client_id": "600079573284-9cb6t536augbadu26qr7olob1fe5fl28.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAEsQ6agTvKiZAgpHnnxMj0uaVC6ZaNzGg"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "600079573284-9cb6t536augbadu26qr7olob1fe5fl28.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

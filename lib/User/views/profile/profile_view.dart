@@ -215,7 +215,7 @@ class ProfileView extends StatelessWidget {
                       title: AppStrings.logout,
                       subtitle: "Sign out of account",
                       iconColor: AppColors.accentOrange,
-                      onTap: () async => await authCtrl.logout(),
+                      onTap: () => authCtrl.showLogoutDialog(),
                     ),
 
                     const SizedBox(height: 30),
