@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:edu_prep_academy/User/controllers/auth_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 
 class ProfileController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final authCtrl = Get.find<AuthController>();
 
   RxBool isLoading = true.obs;
 
@@ -29,6 +31,7 @@ class ProfileController extends GetxController {
     fetchUserProfile();
     listenMockAttempts();
     calculateRankPosition();
+    authCtrl.fetchUserData(); //  fetch user data on profile load
   }
 
   @override

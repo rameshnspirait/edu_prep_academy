@@ -65,14 +65,16 @@ class ProfileView extends StatelessWidget {
                           CircleAvatar(
                             radius: 42,
                             backgroundColor: Colors.white,
-                            child: Text(
-                              authCtrl.name.value.isNotEmpty
-                                  ? authCtrl.name.value[0].toUpperCase()
-                                  : "U",
-                              style: const TextStyle(
-                                fontSize: 30,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryBlue,
+                            child: Obx(
+                              () => Text(
+                                authCtrl.name.value.isNotEmpty
+                                    ? authCtrl.name.value[0].toUpperCase()
+                                    : "U",
+                                style: const TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryBlue,
+                                ),
                               ),
                             ),
                           ),
@@ -80,12 +82,14 @@ class ProfileView extends StatelessWidget {
                           const SizedBox(height: 12),
 
                           /// Full Name
-                          Text(
-                            authCtrl.name.value,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          Obx(
+                            () => Text(
+                              authCtrl.name.value,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
 

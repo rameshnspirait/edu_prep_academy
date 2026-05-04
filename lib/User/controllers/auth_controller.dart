@@ -199,6 +199,7 @@ class AuthController extends GetxController {
           "createdAt": FieldValue.serverTimestamp(),
         });
       }
+      await fetchUserData();
 
       Get.offAllNamed('/dashboard');
     } catch (_) {
@@ -271,6 +272,7 @@ class AuthController extends GetxController {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
                       ),
                       onPressed: () {
                         Get.back(); // close dialog
