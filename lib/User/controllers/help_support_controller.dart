@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:edu_prep_academy/User/routes/app_routes.dart';
 import 'package:edu_prep_academy/User/views/profile/help_support_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -107,14 +108,16 @@ class HelpSupportController extends GetxController {
         "updatedAt": FieldValue.serverTimestamp(),
       });
 
-      /// ✅ CLEAR FORM
+      ///  CLEAR FORM
       titleCtrl.clear();
       descCtrl.clear();
+      selectedCategory.value = categories.isNotEmpty ? categories.first : '';
+      selectedPriority.value = priorities.isNotEmpty ? priorities.first : '';
 
-      /// ✅ REFRESH TICKETS LIST
+      ///  REFRESH TICKETS LIST
       await fetchUserTickets();
 
-      /// ✅ SUCCESS MESSAGE
+      ///  SUCCESS MESSAGE
       Get.snackbar(
         "Success",
         "Ticket submitted successfully",
@@ -123,17 +126,15 @@ class HelpSupportController extends GetxController {
         colorText: Colors.white,
       );
 
-      /// ✅ NAVIGATE BACK (Help & Support)
-      Get.off(() => HelpSupportView());
-      // OR if you want force:
-      // Get.off(() => HelpSupportView());
+      ///  NAVIGATE BACK (Help & Support)
+      Get.offAndToNamed(AppRoutes.helpSupport);
     } catch (e) {
-      Get.snackbar(
-        "Error",
-        "Failed to submit ticket",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      // Get.snackbar(
+      //   "Error",
+      //   "Failed to submit ticket",
+      //   backgroundColor: Colors.red,
+      //   colorText: Colors.white,
+      // );
     } finally {
       isLoading.value = false;
     }

@@ -4,6 +4,7 @@ import 'package:edu_prep_academy/User/views/profile/pdf_view_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DownloadedNotesView extends StatefulWidget {
   const DownloadedNotesView({super.key});
@@ -34,6 +35,10 @@ class _DownloadedNotesViewState extends State<DownloadedNotesView> {
       ),
 
       body: Obx(() {
+        if (controller.isLoading.value) {
+          return const _DownloadedNotesShimmer();
+        }
+
         final pdfs = controller.downloadedPdfs;
 
         if (pdfs.isEmpty) {
@@ -223,6 +228,125 @@ class _PremiumPdfCard extends StatelessWidget {
           color: color,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+class _DownloadedNotesShimmer extends StatelessWidget {
+  const _DownloadedNotesShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 6,
+      itemBuilder: (_, __) => const _ShimmerCard(),
+    );
+  }
+}
+
+class _ShimmerCard extends StatelessWidget {
+  const _ShimmerCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Shimmer.fromColors(
+        baseColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+        highlightColor: isDark ? Colors.grey.shade700 : Colors.grey.shade100,
+        child: Container(
+          height: 100,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            color: isDark ? Colors.grey.shade900 : Colors.white,
+          ),
+          child: Row(
+            children: [
+              /// LEFT THUMBNAIL
+              Container(
+                width: 90,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(18),
+                    bottomLeft: Radius.circular(18),
+                  ),
+                ),
+              ),
+
+              /// RIGHT CONTENT
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// TITLE
+                      Container(
+                        height: 14,
+                        width: double.infinity,
+                        color: isDark
+                            ? Colors.grey.shade700
+                            : Colors.grey.shade300,
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      /// DATE
+                      Container(
+                        height: 12,
+                        width: 120,
+                        color: isDark
+                            ? Colors.grey.shade700
+                            : Colors.grey.shade300,
+                      ),
+
+                      const Spacer(),
+
+                      /// TAGS
+                      Row(
+                        children: [
+                          _tagShimmer(isDark),
+                          const SizedBox(width: 6),
+                          _tagShimmer(isDark),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              /// ARROW
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tagShimmer(bool isDark) {
+    return Container(
+      height: 18,
+      width: 50,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(20),
       ),
     );
   }

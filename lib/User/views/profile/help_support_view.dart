@@ -1,6 +1,7 @@
 import 'package:edu_prep_academy/User/views/profile/raise_ticket_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:edu_prep_academy/User/controllers/help_support_controller.dart';
 
@@ -22,7 +23,7 @@ class HelpSupportView extends StatelessWidget {
 
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return const HelpSupportShimmer();
         }
 
         return ListView(
@@ -365,6 +366,84 @@ class _FaqTileState extends State<_FaqTile> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class HelpSupportShimmer extends StatelessWidget {
+  const HelpSupportShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        /// HEADER
+        _shimmerBox(context, height: 90, radius: 16),
+
+        const SizedBox(height: 20),
+
+        /// CONTACT CARDS
+        ...List.generate(3, (index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _shimmerBox(context, height: 70, radius: 12),
+          );
+        }),
+
+        const SizedBox(height: 20),
+
+        /// FAQ
+        _shimmerBox(context, height: 20, width: 180, radius: 8),
+        const SizedBox(height: 10),
+
+        ...List.generate(3, (index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _shimmerBox(context, height: 60, radius: 12),
+          );
+        }),
+
+        const SizedBox(height: 25),
+
+        /// RAISE TICKET CARD
+        _shimmerBox(context, height: 120, radius: 16),
+
+        const SizedBox(height: 25),
+
+        /// MY TICKETS
+        _shimmerBox(context, height: 20, width: 140, radius: 8),
+        const SizedBox(height: 10),
+
+        ...List.generate(2, (index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _shimmerBox(context, height: 70, radius: 12),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _shimmerBox(
+    BuildContext context, {
+    double height = 50,
+    double? width,
+    double radius = 12,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Shimmer.fromColors(
+      baseColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+      highlightColor: isDark ? Colors.grey.shade700 : Colors.grey.shade100,
+      child: Container(
+        height: height,
+        width: width ?? double.infinity,
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey.shade900 : Colors.white,
+          borderRadius: BorderRadius.circular(radius),
         ),
       ),
     );

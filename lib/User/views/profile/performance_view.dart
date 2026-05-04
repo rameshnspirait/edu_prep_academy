@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../controllers/profile_controller.dart';
 import '../../core/constants/app_colors.dart';
 
@@ -22,7 +23,7 @@ class PerformanceView extends StatelessWidget {
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return _performanceShimmer(context);
         }
 
         return RefreshIndicator(
@@ -332,4 +333,79 @@ class PerformanceView extends StatelessWidget {
       ],
     );
   }
+}
+
+Widget _performanceShimmer(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  Color baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+  Color highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+
+  return SingleChildScrollView(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      children: [
+        /// 🔵 OVERVIEW CARD SHIMMER
+        Shimmer.fromColors(
+          baseColor: baseColor,
+          highlightColor: highlightColor,
+          child: Container(
+            height: 150,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        /// 📊 GRID SHIMMER
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 1.2,
+          children: List.generate(4, (_) {
+            return Shimmer.fromColors(
+              baseColor: baseColor,
+              highlightColor: highlightColor,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white,
+                ),
+              ),
+            );
+          }),
+        ),
+
+        const SizedBox(height: 20),
+
+        /// 📄 RECENT TESTS LIST SHIMMER
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 4,
+          itemBuilder: (_, __) {
+            return Shimmer.fromColors(
+              baseColor: baseColor,
+              highlightColor: highlightColor,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                height: 70,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    ),
+  );
 }

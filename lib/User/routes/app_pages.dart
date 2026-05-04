@@ -10,6 +10,7 @@ import 'package:edu_prep_academy/User/bindings/start_test_binding.dart';
 import 'package:edu_prep_academy/User/views/auth/login_view.dart';
 import 'package:edu_prep_academy/User/views/dailyquiz/daily_quiz_view.dart';
 import 'package:edu_prep_academy/User/views/dashbaord/dashboard_view.dart';
+import 'package:edu_prep_academy/User/views/profile/help_support_view.dart';
 import 'package:edu_prep_academy/User/views/profile/performance_view.dart';
 import 'package:edu_prep_academy/User/views/profile/profile_view.dart';
 import 'package:edu_prep_academy/User/views/mocks/mock_tests_view.dart';
@@ -82,6 +83,12 @@ class AppPages {
       name: AppRoutes.adminHome,
       page: () => const AdminHomePage(),
       binding: AdminBinding(),
+    ),
+
+    GetPage(
+      name: AppRoutes.helpSupport,
+      page: () => HelpSupportView(),
+      transition: Transition.fadeIn,
     ),
 
     ///////Profiles Options Pages

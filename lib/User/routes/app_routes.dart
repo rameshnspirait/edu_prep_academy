@@ -5,10 +5,10 @@ class AppRoutes {
   /////Profile
   static const profile = '/profile';
   static const share = '/share';
-  static const helpSupport = '/helpSupport';
   static const feedback = '/feedback';
   static const settings = '/settings';
   static const performance = '/performance';
+  static const helpSupport = '/helpSupport';
   ////Dashboard
   static const dashboard = '/dashboard';
   static const note = '/note';
